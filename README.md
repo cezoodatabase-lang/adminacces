@@ -1,0 +1,2 @@
+# adminacces
+cezooall
