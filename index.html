@@ -1519,6 +1519,9 @@
     let currentOpenedOrder = null;
 
 const dashboardProductCache = {};
+
+    const sentCashOrderIds = new Set();
+    const sentUpiOrderIds = new Set();
     /* =====================================================
        ELEMENTS
     ===================================================== */
@@ -2132,6 +2135,47 @@ window.openOrderedProducts = async function(index){
 
 };
     /* =====================================================
+       LOAD SENT STATUS FROM DELIVERY TABLES
+    ===================================================== */
+
+    async function loadSentDeliveryStatus(){
+
+      sentCashOrderIds.clear();
+      sentUpiOrderIds.clear();
+
+      const [cashSent, upiSent] = await Promise.all([
+        dashboardSupabase
+          .from("delivery_cash_orders")
+          .select("order_id"),
+
+        dashboardSupabase
+          .from("delivery_upi_orders")
+          .select("order_id")
+      ]);
+
+      if(cashSent.error){
+        console.error("Cash sent-status error:", cashSent.error);
+      }else{
+        (cashSent.data || []).forEach(row => {
+          if(row.order_id !== null && row.order_id !== undefined){
+            sentCashOrderIds.add(String(row.order_id));
+          }
+        });
+      }
+
+      if(upiSent.error){
+        console.error("UPI sent-status error:", upiSent.error);
+      }else{
+        (upiSent.data || []).forEach(row => {
+          if(row.order_id !== null && row.order_id !== undefined){
+            sentUpiOrderIds.add(String(row.order_id));
+          }
+        });
+      }
+    }
+
+
+    /* =====================================================
        LOAD ORDERS
     ===================================================== */
 
@@ -2174,18 +2218,24 @@ window.openOrderedProducts = async function(index){
           throw upiResponse.error;
         }
 
+        await loadSentDeliveryStatus();
+
 
         cashOrders =
           (cashResponse.data || []).map(order => ({
             ...order,
-            _order_type:"cash"
+            _order_type:"cash",
+            _sent_to_delivery:
+              sentCashOrderIds.has(String(order.order_id))
           }));
 
 
         upiOrders =
           (upiResponse.data || []).map(order => ({
             ...order,
-            _order_type:"upi"
+            _order_type:"upi",
+            _sent_to_delivery:
+              sentUpiOrderIds.has(String(order.order_id))
           }));
 
 
@@ -2522,12 +2572,18 @@ window.openOrderedProducts = async function(index){
                     </td>
 <td>
   <button
-    class="sendDeliveryBtn"
+    class="sendDeliveryBtn ${order._sent_to_delivery ? "sent" : ""}"
     type="button"
-    onclick="sendOrderToDelivery(${orderIndex}, this)"
+    ${order._sent_to_delivery
+      ? "disabled"
+      : `onclick="sendOrderToDelivery(${orderIndex}, this)"`
+    }
+    aria-label="${order._sent_to_delivery ? "Sent" : "Send"}"
   >
-    <i class="fa-solid fa-paper-plane"></i>
-    Send
+    ${order._sent_to_delivery
+      ? '<i class="fa-solid fa-check"></i>'
+      : '<i class="fa-solid fa-paper-plane"></i> Send'
+    }
   </button>
 </td>
 
@@ -3074,6 +3130,13 @@ window.sendOrderToDelivery = async function(index, button){
     return;
   }
 
+  if(order._sent_to_delivery){
+    button.classList.add("sent");
+    button.disabled = true;
+    button.innerHTML = '<i class="fa-solid fa-check"></i>';
+    return;
+  }
+
   const orderType = order._order_type;
 
   const deliveryTable =
@@ -3103,6 +3166,7 @@ window.sendOrderToDelivery = async function(index, button){
     };
 
     delete payload._order_type;
+    delete payload._sent_to_delivery;
 
 
     /*
@@ -3150,11 +3214,18 @@ window.sendOrderToDelivery = async function(index, button){
     }
 
 
-    button.classList.add("sent");
+    order._sent_to_delivery = true;
 
+    if(orderType === "upi"){
+      sentUpiOrderIds.add(String(order.order_id));
+    }else{
+      sentCashOrderIds.add(String(order.order_id));
+    }
+
+    button.classList.add("sent");
+    button.disabled = true;
     button.innerHTML = `
-      <i class="fa-solid fa-circle-check"></i>
-      Sent
+      <i class="fa-solid fa-check"></i>
     `;
 
 
@@ -3184,8 +3255,6 @@ window.sendOrderToDelivery = async function(index, button){
     return;
   }
 
-
-  button.disabled = false;
 
 };
 
