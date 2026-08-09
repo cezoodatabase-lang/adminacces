@@ -1300,7 +1300,7 @@
         <div>
           <div class="summaryLabel">Total Orders</div>
           <div id="totalOrdersCount" class="summaryValue">0</div>
-          <div class="summarySub">Cash and UPI combined</div>
+          <div class="summarySub">Today · Cash and UPI combined</div>
         </div>
 
         <div class="summaryIcon orders">
@@ -1313,7 +1313,7 @@
         <div>
           <div class="summaryLabel">Cash Orders</div>
           <div id="cashOrdersCount" class="summaryValue">0</div>
-          <div class="summarySub">Cash at delivery</div>
+          <div class="summarySub">Today · Cash at delivery</div>
         </div>
 
         <div class="summaryIcon cash">
@@ -1326,7 +1326,7 @@
         <div>
           <div class="summaryLabel">UPI Orders</div>
           <div id="upiOrdersCount" class="summaryValue">0</div>
-          <div class="summarySub">Online paid orders</div>
+          <div class="summarySub">Today · Online paid orders</div>
         </div>
 
         <div class="summaryIcon upi">
@@ -1339,7 +1339,7 @@
         <div>
           <div class="summaryLabel">Total Revenue</div>
           <div id="totalRevenueAmount" class="summaryValue">₹0</div>
-          <div class="summarySub">Value of all orders</div>
+          <div class="summarySub">Today's order value</div>
         </div>
 
         <div class="summaryIcon revenue">
@@ -1426,7 +1426,7 @@
 
       <div class="ordersCardHeader">
 
-        <h2>Customer Orders</h2>
+        <h2>Today's Customer Orders</h2>
 
         <div
           id="ordersResultText"
@@ -1493,11 +1493,11 @@
        SUPABASE CONNECTION
     ===================================================== */
 
-    const SUPABASE_URL =
-      "https://mglyaebackjtwbimvokm.supabase.co";
+  const SUPABASE_URL =
+"https://ycqwdeiykbkfmmlpgdzd.supabase.co";
 
-    const SUPABASE_KEY =
-      "sb_publishable_qMli5WhM2pMnT6_oUsFe4Q_Fzq_-YuB";
+const SUPABASE_KEY =
+"sb_publishable_-4RzQVudUy_VsvSpHTxNfg_hrdsQW0j";
 
 
     const dashboardSupabase =
@@ -2179,6 +2179,58 @@ window.openOrderedProducts = async function(index){
        LOAD ORDERS
     ===================================================== */
 
+    /* =====================================================
+       INDIA DAY RANGE
+       SHOW TODAY'S ORDERS ONLY
+    ===================================================== */
+
+    function getTodayIndiaUtcRange(){
+
+      const INDIA_OFFSET_MS =
+        5.5 * 60 * 60 * 1000;
+
+      const indiaNow =
+        new Date(Date.now() + INDIA_OFFSET_MS);
+
+      const year =
+        indiaNow.getUTCFullYear();
+
+      const month =
+        indiaNow.getUTCMonth();
+
+      const day =
+        indiaNow.getUTCDate();
+
+      const startUtcMs =
+        Date.UTC(
+          year,
+          month,
+          day,
+          0,
+          0,
+          0,
+          0
+        ) - INDIA_OFFSET_MS;
+
+      const endUtcMs =
+        Date.UTC(
+          year,
+          month,
+          day + 1,
+          0,
+          0,
+          0,
+          0
+        ) - INDIA_OFFSET_MS;
+
+      return {
+        start:new Date(startUtcMs).toISOString(),
+        end:new Date(endUtcMs).toISOString()
+      };
+
+    }
+
+
     async function loadOrders(){
 
       refreshBtn.classList.add("loading");
@@ -2188,6 +2240,10 @@ window.openOrderedProducts = async function(index){
 
       try{
 
+        const todayRange =
+          getTodayIndiaUtcRange();
+
+
         const [
           cashResponse,
           upiResponse
@@ -2196,6 +2252,14 @@ window.openOrderedProducts = async function(index){
           dashboardSupabase
             .from("cash_delivery_orders")
             .select("*")
+            .gte(
+              "created_at",
+              todayRange.start
+            )
+            .lt(
+              "created_at",
+              todayRange.end
+            )
             .order("created_at", {
               ascending:false
             }),
@@ -2203,6 +2267,14 @@ window.openOrderedProducts = async function(index){
           dashboardSupabase
             .from("upi_orders")
             .select("*")
+            .gte(
+              "created_at",
+              todayRange.start
+            )
+            .lt(
+              "created_at",
+              todayRange.end
+            )
             .order("created_at", {
               ascending:false
             })
@@ -2218,25 +2290,32 @@ window.openOrderedProducts = async function(index){
           throw upiResponse.error;
         }
 
+
         await loadSentDeliveryStatus();
 
 
         cashOrders =
-          (cashResponse.data || []).map(order => ({
-            ...order,
-            _order_type:"cash",
-            _sent_to_delivery:
-              sentCashOrderIds.has(String(order.order_id))
-          }));
+          (cashResponse.data || [])
+            .map(order => ({
+              ...order,
+              _order_type:"cash",
+              _sent_to_delivery:
+                sentCashOrderIds.has(
+                  String(order.order_id)
+                )
+            }));
 
 
         upiOrders =
-          (upiResponse.data || []).map(order => ({
-            ...order,
-            _order_type:"upi",
-            _sent_to_delivery:
-              sentUpiOrderIds.has(String(order.order_id))
-          }));
+          (upiResponse.data || [])
+            .map(order => ({
+              ...order,
+              _order_type:"upi",
+              _sent_to_delivery:
+                sentUpiOrderIds.has(
+                  String(order.order_id)
+                )
+            }));
 
 
         allOrders = [
@@ -2255,6 +2334,7 @@ window.openOrderedProducts = async function(index){
         updateSummary();
         renderFilteredOrders();
 
+
       }catch(error){
 
         console.error(
@@ -2264,7 +2344,7 @@ window.openOrderedProducts = async function(index){
 
         showErrorState(
           error.message ||
-          "Unable to load orders."
+          "Unable to load today's orders."
         );
 
       }finally{
