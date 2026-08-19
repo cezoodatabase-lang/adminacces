@@ -1,4847 +1,1369 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>CEZOO Vendor</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CEZOO New Orders</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;min-height:100%}
-body{min-height:100dvh;background:#f7f7f8;color:#202126;font-family:"Inter",Arial,sans-serif}
-button,input{font:inherit} button{cursor:pointer}
-
-.login-screen{width:100%;min-height:100dvh;display:none;align-items:center;justify-content:center;padding:22px}
-.login-content{width:100%;max-width:350px}
-.brand{text-align:center;margin-bottom:30px}
-.cezoo{font-family:"Bungee",sans-serif;font-size:34px;line-height:1;color:#252525}
-.login-heading{text-align:center;margin-bottom:27px}
-.login-heading h1{font-size:21px;font-weight:700}
-.login-heading p{margin-top:7px;color:#999;font-size:12px}
-.field{margin-bottom:17px}
-.field label{display:block;margin-bottom:8px;color:#555;font-size:12px;font-weight:600}
-.input-wrap{position:relative}
-.field input{width:100%;height:47px;padding:0 13px;border:1px solid #ddd;border-radius:10px;outline:none;background:#fff;color:#222;font-size:14px}
-.field input:focus{border-color:#aaa}
-.password-wrap input{padding-right:60px}
-.show-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#777;font-size:11px;font-weight:600}
-.login-btn{width:100%;height:47px;border:0;border-radius:10px;background:#222;color:#fff;font-size:14px;font-weight:700}
-.login-btn:disabled{opacity:.55}
-.message{display:none;margin-top:12px;padding:10px;border-radius:9px;text-align:center;font-size:11px}
-.message.error{display:block;background:#fff0f0;color:#c33}
-
-.vendor-app{display:none;min-height:100dvh;padding-bottom:calc(122px + env(safe-area-inset-bottom))}
-.app-content{width:100%;max-width:760px;margin:auto;padding:calc(35px + env(safe-area-inset-top)) 14px 30px}
-.app-page{display:none}
-.app-page.active{display:block}
-
-.loading-spinner-only{min-height:70dvh;display:flex;align-items:center;justify-content:center}
-.spinner{width:29px;height:29px;border:3px solid #e7e8ea;border-top-color:#333;border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-.empty-orders{min-height:72dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-.empty-icon{width:58px;height:58px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;border-radius:17px;background:#ececef;color:#777;font-size:19px}
-.empty-orders h2{font-size:15px;font-weight:800}
-.empty-orders p{margin-top:6px;color:#9a9ca2;font-size:9px}
-
-.order-card{overflow:visible;background:transparent;border:0;border-radius:0;box-shadow:none}
-.order-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:35px;padding:0 2px 14px;border-bottom:1px solid #dedfe2}
-.order-id{font-size:16px;font-weight:800}
-.order-time{margin-top:3px;color:#999;font-size:10px}
-.payment-chip{padding:5px 8px;border-radius:8px;background:#f1f2f3;color:#555;font-size:12px;font-weight:800}
-
-.customer-strip{display:block;padding:15px 2px;border-top:1px solid #dedfe2;border-bottom:1px solid #dedfe2;background:transparent}
-.customer-name{font-size:16px;font-weight:800}
-.customer-meta{margin-top:4px;display:flex;flex-direction:column;gap:3px;color:#858991;font-size:10px}
-.customer-meta span{display:inline-flex;align-items:center;gap:4px}
-.distance-badge{display:inline-flex;align-items:center;gap:5px;min-height:28px;margin-top:7px;padding:0 9px;border-radius:9px;background:#f4f4f5;color:#444;font-size:12px;font-weight:800;white-space:nowrap}
-
-.items-head{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    padding:14px 2px 7px;
-}
-.items-head strong{
-    font-size:10px;
-    font-weight:800;
-}
-.items-count{
-    min-width:30px;
-    height:24px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    border-radius:8px;
-    background:#f1f2f3;
-    color:#333;
-    font-size:9px;
-    font-weight:800;
-}
-.items-wrap{padding:0}
-.order-item{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px 2px;border-bottom:1px solid #e3e4e6}
-.order-item:last-child{border-bottom:0}
-.order-image{width:76px;height:76px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:0;border-radius:10px;background:#f1f2f3;color:#aaa}
-.order-image img{width:100%;height:100%;object-fit:contain}
-.order-product{min-width:0}
-.product-title{font-size:16px;font-weight:800;line-height:1.4}
-.product-sub{margin-top:5px;color:#8f9399;font-size:10px}
-.product-price{margin-top:6px;font-size:12px;font-weight:700}
-.qty-box{min-width:48px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#f2f3f4;color:#222;font-size:12px;font-weight:800}
-
-.order-summary{display:block;padding:15px 2px 0;border-top:1px solid #dedfe2;background:transparent}
-.summary-label{color:#999;font-size:7px;font-weight:700}
-.summary-value{margin-top:3px;font-size:16px;font-weight:800}
-.pack-btn{width:100%;height:48px;margin-top:12px;padding:0 16px;border:0;border-radius:11px;background:#202126;color:#fff;font-size:12px;font-weight:800}
-.pack-btn:active{transform:scale(.985)}
-.pack-btn:disabled{opacity:.55}
-
-.queue-bar{position:fixed;left:0;right:0;bottom:calc(68px + env(safe-area-inset-bottom));z-index:90;height:52px;display:none;grid-template-columns:1fr 1fr;background:#fff;border-top:1px solid #ececee}
-.queue-stat{display:flex;align-items:center;justify-content:center;gap:8px}
-.queue-stat + .queue-stat{border-left:1px solid #eee}
-.queue-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:#f1f2f3;color:#555;font-size:10px}
-.queue-info span{display:block;color:#999;font-size:7px;font-weight:650}
-.queue-info strong{display:block;margin-top:2px;font-size:11px;font-weight:800}
-
-.page-title{margin-bottom:18px}
-.page-title h1{font-size:22px}
-.page-title p{margin-top:5px;color:#999;font-size:9px}
-.product-count{margin-bottom:10px;color:#888;font-size:9px}
-.products-list{display:flex;flex-direction:column;gap:10px}
-.product-card{
-    padding:13px;
-    display:grid;
-    grid-template-columns:68px minmax(0,1fr) auto;
-    align-items:start;
-    gap:12px;
-    background:#fff;
-    border:1px solid #e8e8ea;
-    border-radius:15px;
-}
-.product-image{
-    width:68px;
-    height:68px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    overflow:hidden;
-    border-radius:12px;
-    background:#f5f5f6;
-    color:#aaa;
-}
-.product-image img{width:100%;height:100%;object-fit:contain}
-.product-info{min-width:0}
-.product-name{
-    font-size:13px;
-    line-height:1.35;
-    font-weight:800;
-}
-.product-telugu{
-    margin-top:3px;
-    color:#666;
-    font-size:11px;
-    line-height:1.35;
-    font-weight:600;
-}
-.product-table-name{
-    margin-top:5px;
-    color:#9a9ca2;
-    font-size:8px;
-}
-.product-meta{
-    margin-top:8px;
-    display:flex;
-    flex-wrap:wrap;
-    gap:6px;
-}
-.product-meta-chip{
-    min-height:26px;
-    display:inline-flex;
-    align-items:center;
-    padding:0 8px;
-    border-radius:8px;
-    background:#f3f4f5;
-    color:#333;
-    font-size:9px;
-    font-weight:700;
-}
-.product-price-row{
-    margin-top:8px;
-    display:flex;
-    align-items:center;
-    gap:7px;
-}
-.product-price-value{
-    font-size:12px;
-    font-weight:800;
-}
-.product-edit-btn{
-    width:26px;
-    height:26px;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    border:1px solid #dedfe2;
-    border-radius:8px;
-    background:#fff;
-    color:#555;
-    font-size:9px;
-}
-.product-edit-form{
-    display:none;
-    margin-top:10px;
-    padding-top:10px;
-    border-top:1px solid #eeeeef;
-}
-.product-edit-form.show{display:block}
-.product-edit-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr 1fr auto;
-    gap:7px;
-    align-items:end;
-}
-.edit-field label{
-    display:block;
-    margin-bottom:5px;
-    color:#888;
-    font-size:7px;
-    font-weight:700;
-}
-.edit-field input{
-    width:100%;
-    height:34px;
-    padding:0 8px;
-    border:1px solid #dedfe2;
-    border-radius:8px;
-    outline:none;
-    background:#fff;
-    color:#222;
-    font-size:9px;
-}
-.edit-field input:focus{border-color:#aaa}
-.product-save-btn{
-    width:34px;
-    height:34px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    border:0;
-    border-radius:9px;
-    background:#222;
-    color:#fff;
-    font-size:10px;
-}
-.product-save-btn.saved{background:#198754}
-.product-save-btn:disabled{opacity:.55}
-.stock-area{
-    display:flex;
-    flex-direction:column;
-    align-items:flex-end;
-    gap:6px;
-}
-.stock-text{font-size:8px;font-weight:700}
-.stock-text.on{color:#278348}
-.stock-text.off{color:#c74747}
-
-@media(max-width:520px){
-    .product-card{
-        grid-template-columns:62px minmax(0,1fr) auto;
-        gap:10px;
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --green:#16c85c;
+      --green-dark:#0a9e43;
+      --green-soft:#effcf4;
+      --red:#e84242;
+      --red-soft:#fff1f1;
+      --orange:#f59e0b;
+      --blue:#2475ff;
+      --purple:#7c3aed;
+      --text:#17191f;
+      --muted:#777d86;
+      --line:#e9ebef;
+      --page:#fff;
+      --soft:#f7f8f9;
+      --dark:#15171b;
     }
-    .product-image{
-        width:62px;
-        height:62px;
+
+    body{
+      min-height:100vh;
+      background:var(--page);
+      color:var(--text);
+      font-family:"Inter",Arial,sans-serif;
+      padding-bottom:84px;
     }
-    .product-edit-grid{
-        grid-template-columns:1fr 1fr;
+
+    button,select{font:inherit}
+    button{cursor:pointer}
+
+    /* TOP */
+    /* TABS */
+    .tabs{
+      display:flex;
+      align-items:center;
+      gap:24px;
+      padding:0 18px;
+      height:54px;
+      border-bottom:1px solid var(--line);
+      overflow:auto;
+      background:#fff;
+      position:sticky;
+      top:0;
+      z-index:90;
     }
-    .product-save-btn{
-        width:100%;
-        grid-column:1 / -1;
+
+    .tab{
+      height:54px;
+      border:0;
+      background:transparent;
+      color:#888d96;
+      position:relative;
+      font-size:11px;
+      font-weight:800;
+      white-space:nowrap;
+      display:flex;
+      align-items:center;
+      gap:7px;
     }
-}
 
-.switch{position:relative;width:43px;height:24px;display:inline-block}
-.switch input{opacity:0;width:0;height:0}
-.slider{position:absolute;inset:0;border-radius:30px;background:#d8dade;transition:.2s}
-.slider::before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.2s}
-.switch input:checked + .slider{background:#222}
-.switch input:checked + .slider::before{transform:translateX(19px)}
+    .tab.active{
+      color:var(--text);
+    }
 
-.coming{min-height:70dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-.coming i{color:#888;font-size:26px}
-.coming h2{margin-top:15px;font-size:17px}
-.coming p{margin-top:5px;color:#999;font-size:9px}
+    .tab.active::after{
+      content:"";
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:-1px;
+      height:2px;
+      background:var(--green);
+      border-radius:10px 10px 0 0;
+    }
 
-.profile-card{padding:18px;background:#fff;border:1px solid #e8e8ea;border-radius:17px}
-.profile-avatar{width:55px;height:55px;display:flex;align-items:center;justify-content:center;margin-bottom:15px;border-radius:50%;background:#eee;font-size:19px}
-.profile-name{font-size:18px;font-weight:800}
-.profile-mobile{margin-top:4px;color:#888;font-size:10px}
-.profile-row{min-height:57px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid #eee}
-.profile-row span{color:#999;font-size:10px}
-.profile-row strong{display:block;margin-top:3px;font-size:10px}
-.logout{width:100%;height:43px;margin-top:17px;border:1px solid #ddd;border-radius:10px;background:#fff;color:#c33;font-size:12px;font-weight:700}
+    .count{
+      min-width:20px;
+      height:20px;
+      padding:0 6px;
+      border-radius:999px;
+      background:#f0f1f3;
+      color:#666;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:9px;
+    }
 
-.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:100;display:grid;grid-template-columns:repeat(4,1fr);padding:6px 5px calc(6px + env(safe-area-inset-bottom));background:rgba(255,255,255,.98);border-top:1px solid #e8e8ea}
-.nav-btn{height:55px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:0;background:transparent;color:#a0a0a5}
-.nav-btn i{font-size:16px}
-.nav-btn span{font-size:8px;font-weight:600}
-.nav-btn.active{color:#222}
+    .tab.active .count{
+      background:var(--green-soft);
+      color:var(--green-dark);
+    }
 
-.toast{position:fixed;left:50%;bottom:135px;z-index:1000;max-width:calc(100% - 30px);padding:10px 14px;border-radius:10px;background:#222;color:#fff;font-size:9px;opacity:0;visibility:hidden;transform:translate(-50%,15px);transition:.2s}
-.toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
-.toast.error{background:#c33}
+    /* ORDER LIST */
+    .ordersList{
+      width:100%;
+    }
 
-@media(max-width:420px){
-    .app-content{padding-left:11px;padding-right:11px}
-    .order-image{width:70px;height:70px}
-    .order-item{grid-template-columns:70px minmax(0,1fr) auto;gap:10px}
-}
+    .orderItem{
+      background:#fff;
+      border-bottom:10px solid #f5f6f7;
+    }
 
-.boot-screen{
-    position:fixed;
-    inset:0;
-    z-index:9999;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:#f7f7f8;
-}
-.boot-screen.hide{
-    display:none;
-}
-.boot-logo{
-    font-family:"Bungee",sans-serif;
-    font-size:26px;
-    color:#252525;
-    animation:bootPulse .85s ease-in-out infinite alternate;
-}
-@keyframes bootPulse{
-    from{opacity:.45;transform:scale(.98)}
-    to{opacity:1;transform:scale(1)}
-}
+    .orderHead{
+      padding:16px 18px 13px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid var(--line);
+    }
 
+    .orderId{
+      font-size:12px;
+      font-weight:800;
+      line-height:1.4;
+      word-break:break-word;
+    }
 
-.analytics-page{padding-top:30px}
-.analytics-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.analytics-card{padding:15px;background:#fff;border:1px solid #e7e8ea;border-radius:14px}
-.analytics-card-label{color:#8b8e94;font-size:9px;font-weight:700}
-.analytics-card-value{margin-top:7px;font-size:22px;line-height:1;font-weight:800}
-.analytics-card-sub{margin-top:6px;color:#999;font-size:8px}
-.analytics-section{margin-top:18px;padding:15px;background:#fff;border:1px solid #e7e8ea;border-radius:14px}
-.analytics-section h2{font-size:13px;font-weight:800}
-.analytics-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:42px;border-bottom:1px solid #eeeeef}
-.analytics-row:last-child{border-bottom:0}
-.analytics-row span{color:#777;font-size:10px}
-.analytics-row strong{font-size:11px}
-.analytics-net{color:#198754}
-.analytics-cancel{color:#c74747}
-@media(max-width:430px){.analytics-card-value{font-size:20px}}
+    .orderTime{
+      margin-top:4px;
+      color:#8a8f97;
+      font-size:9px;
+    }
 
-</style>
+    .status{
+      border-radius:999px;
+      padding:7px 10px;
+      font-size:9px;
+      font-weight:800;
+      text-transform:capitalize;
+      white-space:nowrap;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+
+    .status::before{
+      content:"";
+      width:6px;
+      height:6px;
+      border-radius:50%;
+      background:currentColor;
+      opacity:.9;
+    }
+
+    .status.new,.status.placed,.status.pending{
+      background:#edf4ff;
+      color:#1769c8;
+    }
+
+    .status.confirmed,.status.packed{
+      background:#f3edff;
+      color:#7040c3;
+    }
+
+    .status.on_the_way,.status.out_for_delivery{
+      background:#fff3e8;
+      color:#c96400;
+    }
+
+    .status.cancelled,.status.canceled{
+      background:var(--red-soft);
+      color:var(--red);
+    }
+
+    .status.default{
+      background:#f1f2f4;
+      color:#60646c;
+    }
+
+    /* CUSTOMER */
+    .customerSection{
+      padding:14px 18px;
+      border-bottom:1px solid var(--line);
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:14px;
+      align-items:start;
+    }
+
+    .sectionLabel{
+      font-size:8px;
+      color:#989da5;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.55px;
+      margin-bottom:7px;
+    }
+
+    .customerName{
+      font-size:13px;
+      font-weight:800;
+    }
+
+    .customerLine{
+      margin-top:6px;
+      color:#676c75;
+      font-size:10px;
+      line-height:1.5;
+      display:flex;
+      gap:7px;
+      align-items:flex-start;
+    }
+
+    .customerLine i{
+      width:13px;
+      color:#8d929a;
+      margin-top:2px;
+    }
+
+    .customerLine a{
+      color:inherit;
+      text-decoration:none;
+    }
+
+    .mapBtn{
+      width:40px;
+      height:40px;
+      border:0;
+      border-radius:50%;
+      background:var(--green-soft);
+      color:var(--green-dark);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-decoration:none;
+      font-size:14px;
+    }
+
+    /* PRODUCTS */
+    .productsSection{
+      padding:14px 18px 4px;
+      border-bottom:1px solid var(--line);
+    }
+
+    .productRow{
+      display:grid;
+      grid-template-columns:62px minmax(0,1fr) auto;
+      gap:12px;
+      align-items:center;
+      padding:10px 0 13px;
+      border-bottom:1px solid #f0f1f3;
+    }
+
+    .productRow:last-child{
+      border-bottom:0;
+    }
+
+    .productImage{
+      width:62px;
+      height:62px;
+      border-radius:12px;
+      background:#f7f8f9;
+      border:1px solid #eceef1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      color:#aaa;
+    }
+
+    .productImage img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:block;
+    }
+
+    .productName{
+      font-size:11px;
+      line-height:1.4;
+      font-weight:800;
+    }
+
+    .productPack{
+      margin-top:5px;
+      color:#858a93;
+      font-size:9px;
+    }
+
+    .productMeta{
+      text-align:right;
+      min-width:62px;
+    }
+
+    .qty{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:35px;
+      height:26px;
+      padding:0 8px;
+      border-radius:8px;
+      background:#17191d;
+      color:#fff;
+      font-size:9px;
+      font-weight:800;
+    }
+
+    .linePrice{
+      margin-top:6px;
+      font-size:10px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+
+    .singlePrice{
+      margin-top:3px;
+      color:#969ba3;
+      font-size:8px;
+      white-space:nowrap;
+    }
+
+    /* BILL */
+    .billSection{
+      padding:15px 18px;
+      border-bottom:1px solid var(--line);
+    }
+
+    .billRow{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      padding:6px 0;
+      font-size:10px;
+      color:#6d727b;
+    }
+
+    .billRow strong{
+      color:#2d3036;
+      font-weight:750;
+    }
+
+    .billTotal{
+      margin-top:7px;
+      padding-top:12px;
+      border-top:1px dashed #dfe2e6;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+
+    .billTotal span{
+      font-size:11px;
+      font-weight:800;
+    }
+
+    .billTotal strong{
+      font-size:21px;
+      font-weight:800;
+      letter-spacing:-.4px;
+    }
+
+    /* STATUS ACTION */
+    .statusSection{
+      padding:14px 18px 17px;
+      display:flex;
+      align-items:center;
+      gap:9px;
+    }
+
+    .statusSelect{
+      flex:1;
+      height:42px;
+      border:1px solid var(--line);
+      border-radius:11px;
+      background:#fafafa;
+      color:#333;
+      padding:0 11px;
+      outline:none;
+      font-size:10px;
+      font-weight:700;
+    }
+
+    .updateBtn{
+      height:42px;
+      padding:0 16px;
+      border:0;
+      border-radius:11px;
+      background:var(--dark);
+      color:#fff;
+      font-size:10px;
+      font-weight:800;
+    }
+
+    .updateBtn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+    }
+
+    /* EMPTY */
+    .empty{
+      min-height:420px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:40px 20px;
+    }
+
+    .emptyIcon{
+      width:60px;
+      height:60px;
+      border-radius:50%;
+      background:#f3f4f5;
+      color:#a1a6ae;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:21px;
+      margin-bottom:13px;
+    }
+
+    .empty h3{
+      font-size:15px;
+      font-weight:800;
+    }
+
+    .empty p{
+      max-width:320px;
+      margin-top:6px;
+      color:#888d95;
+      font-size:10px;
+      line-height:1.5;
+    }
+
+    /* BOTTOM NAV */
+    .bottomNav{
+      position:fixed;
+      left:0;
+      right:0;
+      bottom:0;
+      height:72px;
+      background:#fff;
+      border-top:1px solid var(--line);
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      z-index:200;
+    }
+
+    .bottomBtn{
+      border:0;
+      background:#fff;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:5px;
+      color:#92979f;
+      font-size:9px;
+      font-weight:800;
+      position:relative;
+    }
+
+    .bottomBtn i{
+      font-size:17px;
+    }
+
+    .bottomBtn.active{
+      color:var(--green-dark);
+    }
+
+    .bottomBtn.active::before{
+      content:"";
+      width:24px;
+      height:3px;
+      border-radius:999px;
+      background:var(--green);
+      position:absolute;
+      top:0;
+    }
+
+    .bottomBadge{
+      position:absolute;
+      top:8px;
+      margin-left:25px;
+      min-width:17px;
+      height:17px;
+      padding:0 5px;
+      border-radius:999px;
+      background:#ef4444;
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:7px;
+      font-weight:800;
+    }
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:88px;
+      z-index:500;
+      transform:translate(-50%,20px);
+      background:#17191d;
+      color:#fff;
+      padding:11px 15px;
+      border-radius:11px;
+      font-size:10px;
+      font-weight:750;
+      opacity:0;
+      visibility:hidden;
+      transition:.2s;
+      max-width:calc(100% - 28px);
+      text-align:center;
+    }
+
+    .toast.show{
+      opacity:1;
+      visibility:visible;
+      transform:translate(-50%,0);
+    }
+
+    .toast.error{
+      background:#d93636;
+    }
+
+    @media(min-width:850px){
+      body{background:#f5f6f8}
+      .tabs,.ordersList{
+        max-width:900px;
+        margin-left:auto;
+        margin-right:auto;
+      }
+      .tabs,.ordersList{background:#fff}
+      .ordersList{border-left:1px solid var(--line);border-right:1px solid var(--line)}
+      .bottomNav{
+        left:50%;
+        transform:translateX(-50%);
+        max-width:900px;
+        border-left:1px solid var(--line);
+        border-right:1px solid var(--line);
+      }
+    }
+  </style>
 </head>
-
 <body>
 
-<div id="bootScreen" class="boot-screen">
-    <div class="boot-logo">CEZOO</div>
-</div>
+  <nav class="tabs">
+    <button class="tab active" type="button" data-tab="new">
+      New Orders <span class="count" id="newCount">0</span>
+    </button>
+    <button class="tab" type="button" data-tab="cancelled">
+      Cancelled <span class="count" id="cancelledCount">0</span>
+    </button>
+  </nav>
 
-<main id="loginScreen" class="login-screen">
-<section class="login-content">
+  <main id="ordersList" class="ordersList"></main>
 
-<div class="brand"><div class="cezoo">CEZOO</div></div>
+  <nav class="bottomNav">
+    <button class="bottomBtn active" type="button" data-bottom="new">
+      <i class="fa-solid fa-bag-shopping"></i>
+      <span>Orders</span>
+      <span class="bottomBadge" id="bottomNewCount">0</span>
+    </button>
 
-<div class="login-heading">
-    <h1>Login</h1>
-    <p>Enter your mobile number and password</p>
-</div>
+    <button class="bottomBtn" type="button" data-bottom="cancelled">
+      <i class="fa-solid fa-ban"></i>
+      <span>Cancelled</span>
+      <span class="bottomBadge" id="bottomCancelledCount">0</span>
+    </button>
+  </nav>
 
-<form id="loginForm">
+  <div id="toast" class="toast"></div>
 
-<div class="field">
-    <label>Mobile Number</label>
-    <div class="input-wrap">
-        <input id="mobile" type="tel" maxlength="10" inputmode="numeric" placeholder="Enter mobile number">
-    </div>
-</div>
+  <script>
+    const SUPABASE_URL = "https://ycqwdeiykbkfmmlpgdzd.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_-4RzQVudUy_VsvSpHTxNfg_hrdsQW0j";
 
-<div class="field">
-    <label>Password</label>
-    <div class="input-wrap password-wrap">
-        <input id="password" type="password" placeholder="Enter password">
-        <button id="showPassword" class="show-btn" type="button">Show</button>
-    </div>
-</div>
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-<button id="loginBtn" class="login-btn" type="submit">Login</button>
-<div id="message" class="message"></div>
+    const PAGE_OPENED_AT = new Date().toISOString();
 
-</form>
-</section>
-</main>
+    const ORDER_TABLES = [
+      {name:"cash_delivery_orders", payment:"Cash"},
+      {name:"upi_orders", payment:"UPI"}
+    ];
 
-<div id="vendorApp" class="vendor-app">
+    let activeTab = "new";
+    let orders = [];
+    const productCache = {};
 
-<main class="app-content">
+    const ordersList = document.getElementById("ordersList");
+    const newCount = document.getElementById("newCount");
+    const cancelledCount = document.getElementById("cancelledCount");
+    const bottomNewCount = document.getElementById("bottomNewCount");
+    const bottomCancelledCount = document.getElementById("bottomCancelledCount");
+    const toast = document.getElementById("toast");
 
-<section id="ordersPage" class="app-page active">
-    <div id="ordersDisplay">
-        <div class="loading-spinner-only"><div class="spinner"></div></div>
-    </div>
-</section>
-
-<section id="analyticsPage" class="app-page">
-<div class="analytics-page">
-<div class="page-title"><h1>Analytics</h1><p>Order and product sales overview</p></div>
-<div class="analytics-summary">
-<div class="analytics-card"><div class="analytics-card-label">TOTAL ORDERS</div><div class="analytics-card-value" id="analyticsTotalOrders">0</div><div class="analytics-card-sub">Non-cancelled orders</div></div>
-<div class="analytics-card"><div class="analytics-card-label">PACKED</div><div class="analytics-card-value" id="analyticsPacked">0</div><div class="analytics-card-sub">Orders packed</div></div>
-<div class="analytics-card"><div class="analytics-card-label">CANCELLED</div><div class="analytics-card-value analytics-cancel" id="analyticsCancelled">0</div><div class="analytics-card-sub">Removed from net count</div></div>
-<div class="analytics-card"><div class="analytics-card-label">PRODUCT SALES</div><div class="analytics-card-value analytics-net" id="analyticsProductSales">₹0</div><div class="analytics-card-sub">Products only</div></div>
-</div>
-<div class="analytics-section"><h2>Order Summary</h2>
-<div class="analytics-row"><span>Waiting / New</span><strong id="analyticsWaiting">0</strong></div>
-<div class="analytics-row"><span>Packed</span><strong id="analyticsPackedRow">0</strong></div>
-<div class="analytics-row"><span>On the Way</span><strong id="analyticsOnWay">0</strong></div>
-<div class="analytics-row"><span>Delivered</span><strong id="analyticsDelivered">0</strong></div>
-<div class="analytics-row"><span>Cancelled</span><strong class="analytics-cancel" id="analyticsCancelledRow">0</strong></div>
-</div>
-<div class="analytics-section"><h2>Sales Calculation</h2>
-<div class="analytics-row"><span>Product amount</span><strong id="analyticsGrossProducts">₹0</strong></div>
-<div class="analytics-row"><span>Cancelled product amount</span><strong class="analytics-cancel" id="analyticsCancelledProducts">−₹0</strong></div>
-<div class="analytics-row"><span>Net product sales</span><strong class="analytics-net" id="analyticsNetProducts">₹0</strong></div>
-</div>
-</div>
-</section>
-<section id="productsPage" class="app-page">
-    <div class="page-title">
-        <h1>Products</h1>
-        <p>Manage product availability</p>
-    </div>
-
-    <div id="productsCounter" class="product-count">0 products</div>
-    <div id="productsDisplay" class="products-list"></div>
-</section>
-
-<section id="profilePage" class="app-page">
-
-<div class="page-title">
-    <h1>Profile</h1>
-    <p>Vendor account details</p>
-</div>
-
-<div class="profile-card">
-
-<div class="profile-avatar">
-    <i class="fa-solid fa-store"></i>
-</div>
-
-<div id="profileVendorName" class="profile-name">Vendor</div>
-<div id="profileVendorMobile" class="profile-mobile">—</div>
-
-<div style="height:18px"></div>
-
-<div class="profile-row">
-    <div><span>Vendor Name</span><strong id="profileNameValue">—</strong></div>
-</div>
-
-<div class="profile-row">
-    <div><span>Mobile Number</span><strong id="profileMobileValue">—</strong></div>
-</div>
-
-<div class="profile-row">
-    <div><span>Vendor Location</span><strong id="profileLocationValue">Not added</strong></div>
-</div>
-
-<div class="profile-row">
-    <div>
-        <span>Store availability</span>
-        <strong id="storeStatusText">Closed</strong>
-    </div>
-
-    <label class="switch">
-        <input id="storeStatusSwitch" type="checkbox">
-        <span class="slider"></span>
-    </label>
-</div>
-
-<button id="logoutBtn" class="logout" type="button">Logout</button>
-
-</div>
-</section>
-
-</main>
-
-<div id="queueBar" class="queue-bar">
-
-<div class="queue-stat">
-    <div class="queue-icon"><i class="fa-solid fa-check"></i></div>
-    <div class="queue-info">
-        <span>PACKED</span>
-        <strong id="packedCount">0</strong>
-    </div>
-</div>
-
-<div class="queue-stat">
-    <div class="queue-icon"><i class="fa-solid fa-box"></i></div>
-    <div class="queue-info">
-        <span>ORDERS LEFT</span>
-        <strong id="ordersLeftCount">0</strong>
-    </div>
-</div>
-
-</div>
-
-<nav class="bottom-nav">
-
-<button class="nav-btn active" data-page="ordersPage" type="button">
-    <i class="fa-solid fa-receipt"></i>
-    <span>Orders</span>
-</button>
-
-<button class="nav-btn" data-page="analyticsPage" type="button">
-    <i class="fa-solid fa-chart-simple"></i>
-    <span>Analytics</span>
-</button>
-
-<button class="nav-btn" data-page="productsPage" type="button">
-    <i class="fa-solid fa-box-open"></i>
-    <span>Products</span>
-</button>
-
-<button class="nav-btn" data-page="profilePage" type="button">
-    <i class="fa-solid fa-user"></i>
-    <span>Profile</span>
-</button>
-
-</nav>
-
-</div>
-
-<div id="toast" class="toast"></div>
-
-<script>
-
-const SUPABASE_URL =
-"https://ycqwdeiykbkfmmlpgdzd.supabase.co";
-
-const SUPABASE_KEY =
-"sb_publishable_-4RzQVudUy_VsvSpHTxNfg_hrdsQW0j";
-
-const sb =
-window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-);
-
-
-const PRODUCT_TABLES = [
-    "cezoogroceries",
-    "fresh_products",
-    "icecreams",
-    "food_items",
-    "cakes"
-];
-
-
-const ORDER_TABLES = [
-
-    {
-        table:"cash_delivery_orders",
-        type:"cash",
-        payment:"CASH",
-        deliveryTable:"delivery_cash_orders"
-    },
-
-    {
-        table:"upi_orders",
-        type:"upi",
-        payment:"UPI",
-        deliveryTable:"delivery_upi_orders"
+    function safe(value){
+      return String(value ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
     }
 
-];
-
-
-let currentVendor = null;
-let vendorProducts = [];
-let vendorOrders = [];
-let channels = [];
-let productChannels = [];
-let analyticsOrders = [];
-let analyticsRefreshPromise = null;
-
-
-
-/* ===========================
-   ANALYTICS
-=========================== */
-function analyticsNumber(value){
-    const n=Number(value);
-    return Number.isFinite(n)?n:0;
-}
-function getItemQuantityForAnalytics(item){
-    return analyticsNumber(item.quantity ?? item.qty ?? item.count ?? 1)||1;
-}
-function getItemPriceForAnalytics(item,product){
-    for(const value of [
-        item.price,item.unit_price,item.selling_price,
-        item.sale_price,item.discount_price
-    ]){
-        const n=Number(value);
-        if(Number.isFinite(n)) return n;
-    }
-    if(product){
-        const key=getEditablePriceKey(product);
-        const n=Number(key?product[key]:0);
-        if(Number.isFinite(n)) return n;
-    }
-    return 0;
-}
-function getVendorOrderProductAmount(order){
-    const items=getOrderItems(order);
-    let total=0;
-    items.forEach(item=>{
-        const table=getProductTable(item);
-        const id=getProductId(item);
-        const product=vendorProducts.find(
-            p=>normalizeTable(p.product_table)===normalizeTable(table)
-            && String(p.id)===String(id)
-        );
-        total+=getItemPriceForAnalytics(item,product)*getItemQuantityForAnalytics(item);
-    });
-    return total;
-}
-function getAnalyticsOrderStatus(order){
-    return String(order.order_status ?? order.status ?? "placed")
-        .trim().toLowerCase().replaceAll(" ","_");
-}
-async function loadAnalyticsOrders(){
-    if(!currentVendor || !currentVendor.id){
-        analyticsOrders = [];
-        renderAnalytics();
-        return;
+    function number(value){
+      const n = Number(value);
+      return Number.isFinite(n) ? n : 0;
     }
 
-    if(analyticsRefreshPromise){
-        return analyticsRefreshPromise;
-    }
-
-    analyticsRefreshPromise = (async()=>{
-        try{
-            const startTime = getOrderTrackingStart();
-            const startISO = startTime !== null
-                ? new Date(startTime).toISOString()
-                : null;
-
-            const vendorProductMap = createVendorProductMap();
-            const all = [];
-
-            for(const config of ORDER_TABLES){
-                let query = sb
-                    .from(config.table)
-                    .select("*")
-                    .order("created_at", {ascending:true})
-                    .limit(1000);
-
-                if(startISO){
-                    query = query.gte("created_at", startISO);
-                }
-
-                const {data, error} = await query;
-
-                if(error){
-                    console.error("Analytics source load error:", config.table, error);
-                    continue;
-                }
-
-                (data || []).forEach(row=>{
-                    const directVendor =
-                        row.vendor_id !== null &&
-                        row.vendor_id !== undefined &&
-                        String(row.vendor_id) === String(currentVendor.id);
-
-                    let productBelongsToVendor = false;
-                    if(!directVendor){
-                        const items = getOrderItems(row);
-                        productBelongsToVendor = items.some(item=>{
-                            const table = getProductTable(item);
-                            const id = getProductId(item);
-                            if(!table || id === null) return false;
-                            return vendorProductMap.has(productKey(table,id));
-                        });
-                    }
-
-                    if(directVendor || productBelongsToVendor){
-                        all.push({
-                            ...row,
-                            _sourceTable: config.table,
-                            _orderType: config.type,
-                            _payment: config.payment,
-                            _deliveryTable: config.deliveryTable,
-                            _analyticsVendorMatch: directVendor
-                                ? "vendor_id"
-                                : "vendor_product"
-                        });
-                    }
-                });
-            }
-
-            const unique = new Map();
-            all.forEach(order=>{
-                const key = `${order._sourceTable}:${String(order.id)}`;
-                unique.set(key, order);
-            });
-
-            analyticsOrders = Array.from(unique.values());
-            renderAnalytics();
-        }finally{
-            analyticsRefreshPromise = null;
-        }
-    })();
-
-    return analyticsRefreshPromise;
-}
-
-function renderAnalytics(){
-    const orders = Array.isArray(analyticsOrders)
-        ? analyticsOrders
-        : [];
-
-    let packed=0;
-    let cancelled=0;
-    let waiting=0;
-    let onWay=0;
-    let delivered=0;
-    let grossProducts=0;
-    let cancelledProducts=0;
-
-    orders.forEach(order=>{
-        const status = getAnalyticsOrderStatus(order);
-        const amount = getVendorOrderProductAmount(order);
-
-        if(status === "cancelled" || status === "canceled"){
-            cancelled++;
-            cancelledProducts += amount;
-            return;
-        }
-
-        grossProducts += amount;
-
-        if(status === "packed"){
-            packed++;
-        }else if(status === "on_the_way" || status === "ontheway"){
-            onWay++;
-        }else if(status === "delivered"){
-            delivered++;
-        }else{
-            waiting++;
-        }
-    });
-
-    const totalOrders = Math.max(0, orders.length - cancelled);
-    const netProducts = Math.max(0, grossProducts - cancelledProducts);
-    const money = v => "₹" + Number(v || 0).toLocaleString("en-IN",{
+    function money(value){
+      return "₹" + number(value).toLocaleString("en-IN",{
         minimumFractionDigits:0,
         maximumFractionDigits:2
-    });
-
-    const set = (id,v) => {
-        const el = document.getElementById(id);
-        if(el) el.textContent = v;
-    };
-
-    set("analyticsTotalOrders", totalOrders);
-    set("analyticsPacked", packed);
-    set("analyticsCancelled", cancelled);
-    set("analyticsProductSales", money(netProducts));
-    set("analyticsWaiting", waiting);
-    set("analyticsPackedRow", packed);
-    set("analyticsOnWay", onWay);
-    set("analyticsDelivered", delivered);
-    set("analyticsCancelledRow", cancelled);
-    set("analyticsGrossProducts", money(grossProducts));
-    set("analyticsCancelledProducts", "−" + money(cancelledProducts));
-    set("analyticsNetProducts", money(netProducts));
-}
-
-/*
-IMPORTANT FIX
-
-startMarkers are saved ONCE per vendor.
-
-They are NOT recreated on refresh.
-
-Example:
-vendor starts when cash last id = 500
-
-saved marker = 500
-
-new order 501 arrives
-vendor does NOT pack it
-
-browser refreshes
-
-we query all orders > 500 again
-
-501 comes back and stays visible.
-
-Only when 501 is packed,
-source order_status becomes "packed"
-and it disappears.
-*/
-
-
-
-const bootScreen =
-document.getElementById("bootScreen");
-
-const loginScreen =
-document.getElementById("loginScreen");
-
-const vendorApp =
-document.getElementById("vendorApp");
-
-const loginForm =
-document.getElementById("loginForm");
-
-const mobile =
-document.getElementById("mobile");
-
-const password =
-document.getElementById("password");
-
-const showPassword =
-document.getElementById("showPassword");
-
-const loginBtn =
-document.getElementById("loginBtn");
-
-const message =
-document.getElementById("message");
-
-const ordersDisplay =
-document.getElementById("ordersDisplay");
-
-const productsDisplay =
-document.getElementById("productsDisplay");
-
-const storeStatusSwitch =
-document.getElementById("storeStatusSwitch");
-
-
-mobile.addEventListener(
-"input",
-() => {
-
-    mobile.value =
-        mobile.value
-        .replace(/\D/g,"")
-        .slice(0,10);
-
-});
-
-
-showPassword.addEventListener(
-"click",
-() => {
-
-    const hidden =
-        password.type ===
-        "password";
-
-
-    password.type =
-        hidden
-        ? "text"
-        : "password";
-
-
-    showPassword.textContent =
-        hidden
-        ? "Hide"
-        : "Show";
-
-});
-
-
-
-function hideBootScreen(){
-    if(bootScreen){
-        bootScreen.classList.add("hide");
-    }
-}
-
-function showLoginScreen(){
-    vendorApp.style.display = "none";
-    loginScreen.style.display = "flex";
-    hideBootScreen();
-}
-
-function showVendorScreen(){
-    loginScreen.style.display = "none";
-    vendorApp.style.display = "block";
-    hideBootScreen();
-}
-
-
-function toast(
-    text,
-    error=false
-){
-
-    const element =
-        document.getElementById("toast");
-
-
-    element.textContent =
-        text;
-
-
-    element.classList.toggle(
-        "error",
-        error
-    );
-
-
-    element.classList.add("show");
-
-
-    clearTimeout(
-        element.timer
-    );
-
-
-    element.timer =
-        setTimeout(
-            () => {
-
-                element.classList.remove(
-                    "show"
-                );
-
-            },
-            2000
-        );
-
-}
-
-
-function escapeHTML(
-    value
-){
-
-    return String(
-        value ?? ""
-    )
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-
-}
-
-
-function normalizeTable(
-    value
-){
-
-    return String(
-        value || ""
-    )
-    .trim()
-    .toLowerCase();
-
-}
-
-
-function parseItems(
-    value
-){
-
-    if(
-        Array.isArray(value)
-    ){
-        return value;
+      });
     }
 
-
-    if(
-        typeof value === "string"
-    ){
-
-        try{
-
-            const parsed =
-                JSON.parse(value);
-
-
-            return Array.isArray(parsed)
-                ? parsed
-                : [];
-
-        }catch(error){
-
-            return [];
-
-        }
-
-    }
-
-
-    return [];
-
-}
-
-
-function getOrderItems(
-    order
-){
-
-    return parseItems(
-
-        order.items ||
-
-        order.products ||
-
-        order.order_items ||
-
-        order.cart_items ||
-
-        []
-
-    );
-
-}
-
-
-function getProductTable(
-    item
-){
-
-    return normalizeTable(
-
-        item.product_table ||
-
-        item.table_name ||
-
-        item.table ||
-
-        item.source_table ||
-
-        ""
-
-    );
-
-}
-
-
-function getProductId(
-    item
-){
-
-    const id =
-        Number(
-
-            item.product_id ??
-
-            item.productId ??
-
-            item.id ??
-
-            item.item_id
-
-        );
-
-
-    return Number.isFinite(id)
-        ? id
-        : null;
-
-}
-
-
-function productKey(
-    table,
-    id
-){
-
-    return (
-        normalizeTable(table)
-        +
-        ":"
-        +
-        Number(id)
-    );
-
-}
-
-
-function getQuantity(
-    item
-){
-
-    const quantity =
-        Number(
-
-            item.qty ??
-
-            item.quantity ??
-
-            item.count ??
-
-            item.ordered_qty ??
-
-            1
-
-        );
-
-
-    return (
-        Number.isFinite(quantity)
-        &&
-        quantity > 0
-    )
-        ? quantity
-        : 1;
-
-}
-
-
-function getPrice(
-    item,
-    product
-){
-
-    const values = [
-
-        item.discount_price,
-
-        item.price,
-
-        item.unit_price,
-
-        item.sale_price,
-
-        product?.discount_price,
-
-        product?.sale_price,
-
-        product?.price,
-
-        product?.original_price,
-
-        product?.mrp
-
-    ];
-
-
-    for(
-        const value
-        of values
-    ){
-
-        const price =
-            Number(value);
-
-
-        if(
-            Number.isFinite(price)
-        ){
-            return price;
-        }
-
-    }
-
-
-    return 0;
-
-}
-
-
-function getProductName(
-    item,
-    product
-){
-
-    return (
-
-        item.name ||
-
-        item.product_name ||
-
-        item.productName ||
-
-        item.title ||
-
-        product?.name ||
-
-        product?.product_name ||
-
-        product?.title ||
-
-        `Product ${getProductId(item) || ""}`
-
-    );
-
-}
-
-
-
-function firstExistingKey(
-    object,
-    candidates
-){
-
-    if(!object){
-        return null;
-    }
-
-    for(const key of candidates){
-
-        if(
-            Object.prototype.hasOwnProperty.call(
-                object,
-                key
-            )
-        ){
-            return key;
-        }
-
-    }
-
-    return null;
-}
-
-
-function getProductTeluguName(
-    product
-){
-
-    const key =
-        firstExistingKey(
-            product,
-            [
-                "telugu_name",
-                "name_telugu",
-                "product_name_telugu",
-                "telugu",
-                "title_telugu",
-                "telugu_title"
-            ]
-        );
-
-    return key
-        ? String(product[key] ?? "").trim()
-        : "";
-}
-
-
-function getProductQuantityValue(
-    product
-){
-
-    const key =
-        firstExistingKey(
-            product,
-            [
-                "quantity",
-                "qty",
-                "weight",
-                "size",
-                "pack_size",
-                "volume"
-            ]
-        );
-
-    return key ? product[key] : "";
-}
-
-
-function getProductUnitValue(
-    product
-){
-
-    const key =
-        firstExistingKey(
-            product,
-            [
-                "unit",
-                "units",
-                "quantity_unit",
-                "weight_unit",
-                "uom"
-            ]
-        );
-
-    return key ? product[key] : "";
-}
-
-
-function getEditablePriceKey(
-    product
-){
-
-    return firstExistingKey(
-        product,
-        [
-            "discount_price",
-            "sale_price",
-            "price",
-            "original_price",
-            "mrp"
-        ]
-    );
-}
-
-
-function getEditableQuantityKey(
-    product
-){
-
-    return firstExistingKey(
-        product,
-        [
-            "quantity",
-            "qty",
-            "weight",
-            "size",
-            "pack_size",
-            "volume"
-        ]
-    );
-}
-
-
-function getEditableUnitKey(
-    product
-){
-
-    return firstExistingKey(
-        product,
-        [
-            "unit",
-            "units",
-            "quantity_unit",
-            "weight_unit",
-            "uom"
-        ]
-    );
-}
-
-
-function productDomKey(
-    table,
-    id
-){
-
-    return (
-        String(table).replace(/[^a-zA-Z0-9_-]/g,"_")
-        +
-        "_"
-        +
-        String(id).replace(/[^a-zA-Z0-9_-]/g,"_")
-    );
-}
-
-
-function getImage(
-    item,
-    product
-){
-
-    return (
-
-        item.image1 ||
-
-        item.image ||
-
-        item.image_url ||
-
-        item.product_image ||
-
-        product?.image1 ||
-
-        product?.image ||
-
-        product?.image_url ||
-
-        ""
-
-    );
-
-}
-
-
-function getOrderId(
-    order
-){
-
-    return String(
-
-        order.order_id ??
-
-        order.id ??
-
-        order.order_number ??
-
-        ""
-
-    );
-
-}
-
-
-function getCustomerName(
-    order
-){
-
-    return (
-
-        order.user_name ||
-
-        order.customer_name ||
-
-        order.name ||
-
-        order.full_name ||
-
-        "Customer"
-
-    );
-
-}
-
-
-function getCustomerMobile(
-    order
-){
-
-    return (
-
-        order.user_mobile ||
-
-        order.customer_mobile ||
-
-        order.mobile ||
-
-        order.phone ||
-
-        order.phone_number ||
-
-        ""
-
-    );
-
-}
-
-
-function getCustomerAddress(
-    order
-){
-
-    return (
-
-        order.address ||
-
-        order.delivery_address ||
-
-        order.full_address ||
-
-        order.customer_address ||
-
-        ""
-
-    );
-
-}
-
-
-function getDistance(
-    order
-){
-
-    const values = [
-
-        order.distance_km,
-
-        order.distance,
-
-        order.delivery_distance,
-
-        order.distanceKm,
-
-        order.km
-
-    ];
-
-
-    for(
-        const value
-        of values
-    ){
-
-        if(
-            value !== null &&
-            value !== undefined &&
-            String(value).trim() !== ""
-        ){
-
-            const number =
-                Number(value);
-
-
-            if(
-                Number.isFinite(number)
-            ){
-
-                return `${number.toFixed(
-                    number % 1 === 0 ? 0 : 1
-                )} km`;
-
-            }
-
-
-            return String(value);
-
-        }
-
-    }
-
-
-    return "—";
-
-}
-
-
-function formatDate(
-    value
-){
-
-    if(
-        !value
-    ){
-        return "";
-    }
-
-
-    const date =
-        new Date(value);
-
-
-    if(
-        Number.isNaN(
-            date.getTime()
-        )
-    ){
-        return "";
-    }
-
-
-    return date.toLocaleString(
-        "en-IN",
-        {
-            day:"2-digit",
-            month:"short",
-            hour:"2-digit",
-            minute:"2-digit",
-            hour12:true
-        }
-    );
-
-}
-
-
-
-/* ===========================
-   ANDROID FCM TOKEN RECEIVER
-=========================== */
-
-/*
-  Android/Kotlin sends the real FCM token through:
-  window.onAndroidFcmToken(token)
-
-  The latest token is also kept in:
-  window.CEZOO_FCM_TOKEN
-  localStorage: cezoo_fcm_token
-*/
-
-let cezooFcmToken =
-    String(
-        localStorage.getItem("cezoo_fcm_token") || ""
-    ).trim();
-
-
-function cleanFcmToken(token){
-
-    return String(
-        token ?? ""
-    )
-    .trim();
-
-}
-
-
-async function saveVendorFcmToken(){
-
-    if(
-        !currentVendor ||
-        !currentVendor.mobile ||
-        !cezooFcmToken
-    ){
-
-        return;
-
-    }
-
-
-    try{
-
-        const mobileValue =
-            String(
-                currentVendor.mobile
-            )
-            .replace(/\D/g,"")
-            .slice(-10);
-
-
-        if(
-            mobileValue.length !== 10
-        ){
-
-            console.warn(
-                "FCM token save skipped: invalid vendor mobile"
-            );
-
-            return;
-
-        }
-
-
-        const {
-            error
-        } =
-        await sb
-        .from(
-            "delivery_partner_device_tokens"
-        )
-        .upsert(
-            {
-                mobile:mobileValue,
-                device_token:cezooFcmToken,
-                updated_at:new Date().toISOString()
-            },
-            {
-                onConflict:"mobile"
-            }
-        );
-
-
-        if(error){
-
-            console.error(
-                "FCM token save error:",
-                error
-            );
-
-            return;
-
-        }
-
-
-        console.log(
-            "CEZOO FCM token saved for vendor:",
-            mobileValue
-        );
-
-
-    }catch(error){
-
-        console.error(
-            "FCM token save failed:",
-            error
-        );
-
-    }
-
-}
-
-
-window.onAndroidFcmToken =
-    async function(token){
-
-        const cleanToken =
-            cleanFcmToken(
-                token
-            );
-
-
-        if(
-            !cleanToken
-        ){
-
-            return;
-
-        }
-
-
-        cezooFcmToken =
-            cleanToken;
-
-
-        window.CEZOO_FCM_TOKEN =
-            cleanToken;
-
-
-        localStorage.setItem(
-            "cezoo_fcm_token",
-            cleanToken
-        );
-
-
-        console.log(
-            "Real Android FCM token received"
-        );
-
-
-        /*
-          If the vendor is already logged in,
-          save the token immediately.
-        */
-
-        if(
-            currentVendor
-        ){
-
-            await saveVendorFcmToken();
-
-        }
-
-    };
-
-
-/*
-  Also receive the token through the event
-  used by the Android WebView bridge.
-*/
-
-window.addEventListener(
-    "cezooFcmToken",
-    event => {
-
-        const token =
-            cleanFcmToken(
-                event?.detail?.token ??
-                event?.detail ??
-                ""
-            );
-
-
-        if(
-            token
-        ){
-
-            window.onAndroidFcmToken(
-                token
-            );
-
-        }
-
-    }
-);
-
-
-/*
-  Android may send the token before the
-  vendor login finishes. Keep it available.
-*/
-
-if(
-    window.CEZOO_FCM_TOKEN
-){
-
-    const existing =
-        cleanFcmToken(
-            window.CEZOO_FCM_TOKEN
-        );
-
-
-    if(existing){
-
-        cezooFcmToken =
-            existing;
-
-        localStorage.setItem(
-            "cezoo_fcm_token",
-            existing
-        );
-
-    }
-
-}
-
-
-/* ===========================
-   LOGIN
-=========================== */
-
-loginForm.addEventListener(
-"submit",
-async event => {
-
-    event.preventDefault();
-
-
-    const phone =
-        mobile.value.trim();
-
-
-    const pass =
-        password.value.trim();
-
-
-    message.className =
-        "message";
-
-
-    message.textContent =
-        "";
-
-
-    if(
-        phone.length !== 10
-    ){
-
-        message.className =
-            "message error";
-
-
-        message.textContent =
-            "Enter valid mobile number";
-
-
-        return;
-
-    }
-
-
-    if(
-        !pass
-    ){
-
-        message.className =
-            "message error";
-
-
-        message.textContent =
-            "Enter password";
-
-
-        return;
-
-    }
-
-
-    loginBtn.disabled =
-        true;
-
-
-    loginBtn.textContent =
-        "Logging in...";
-
-
-    try{
-
-
-        const {
-            data,
-            error
-        } =
-        await sb
-        .from(
-            "vendor_login"
-        )
-        .select("*")
-        .eq(
-            "mobile",
-            phone
-        )
-        .eq(
-            "password",
-            pass
-        )
-        .maybeSingle();
-
-
-        if(error){
-            throw error;
-        }
-
-
-        if(
-            !data
-        ){
-
-            throw new Error(
-                "Invalid mobile number or password"
-            );
-
-        }
-
-
-        currentVendor =
-            data;
-
-
-        localStorage.setItem(
-            "cezoo_vendor_id",
-            String(data.id)
-        );
-
-
-        /*
-          If Android already delivered the FCM token,
-          attach it to this vendor immediately.
-        */
-
-        await saveVendorFcmToken();
-
-
-        await openVendorApp(
-            data
-        );
-
-
-    }catch(error){
-
-
-        console.error(
-            "Login error:",
-            error
-        );
-
-
-        message.className =
-            "message error";
-
-
-        message.textContent =
-            error.message ||
-            "Login failed";
-
-
-    }finally{
-
-
-        loginBtn.disabled =
-            false;
-
-
-        loginBtn.textContent =
-            "Login";
-
-
-    }
-
-});
-
-
-async function openVendorApp(
-    vendor
-){
-
-    /*
-      Final token-save retry. This handles the case where
-      Android sends the FCM token slightly after login.
-    */
-
-    if(cezooFcmToken){
-        await saveVendorFcmToken();
-    }
-
-
-    showVendorScreen();
-
-
-    setProfile(
-        vendor
-    );
-
-
-    ordersDisplay.innerHTML = `
-        <div class="loading-spinner-only">
-            <div class="spinner"></div>
-        </div>
-    `;
-
-
-    await loadVendorProducts();
-
-    await loadAnalyticsOrders();
-
-    stopProductRealtime();
-    await startProductRealtime();
-
-    vendorOrders = [];
-
-
-    stopRealtime();
-
-
-    /*
-       FROM-NOW TRACKING
-       The start time is stored in the vendor_login row in Supabase.
-       No order marker is stored in localStorage.
-    */
-    await ensureOrderTrackingStart();
-
-    await loadPendingOrdersFromStart();
-
-    await startRealtime();
-
-    /* Catch anything inserted during realtime setup. */
-    await loadPendingOrdersFromStart();
-
-    renderOrders();
-
-
-    openPage(
-        "ordersPage"
-    );
-
-}
-
-
-/* ===========================
-   FROM-NOW ORDER TRACKING
-   =========================== */
-
-async function ensureOrderTrackingStart(){
-    if(!currentVendor || !currentVendor.id){
-        return;
-    }
-
-    // Use the value already stored in Supabase.
-    if(currentVendor.order_tracking_started_at){
-        return;
-    }
-
-    const startedAt = new Date().toISOString();
-
-    const { data, error } = await sb
-        .from("vendor_login")
-        .update({ order_tracking_started_at: startedAt })
-        .eq("id", currentVendor.id)
-        .is("order_tracking_started_at", null)
-        .select("*")
-        .maybeSingle();
-
-    if(error){
-        console.error("Could not save order tracking start time:", error);
-        throw error;
-    }
-
-    if(data){
-        currentVendor = data;
-    }else{
-        // Another device may have saved it first. Read the vendor row.
-        const { data: vendorRow, error: readError } = await sb
-            .from("vendor_login")
-            .select("*")
-            .eq("id", currentVendor.id)
-            .maybeSingle();
-
-        if(readError) throw readError;
-        if(vendorRow) currentVendor = vendorRow;
-    }
-}
-
-function getOrderTrackingStart(){
-    const value = currentVendor?.order_tracking_started_at;
-    if(!value) return null;
-    const time = new Date(value).getTime();
-    return Number.isFinite(time) ? time : null;
-}
-
-/* ===========================
-   PROFILE
-=========================== */
-
-function setProfile(
-    vendor
-){
-
-    const name =
-        vendor.vendor_name ||
-        "Vendor";
-
-
-    const phone =
-        vendor.mobile ||
-        "—";
-
-
-    document.getElementById(
-        "profileVendorName"
-    ).textContent =
-        name;
-
-
-    document.getElementById(
-        "profileVendorMobile"
-    ).textContent =
-        phone;
-
-
-    document.getElementById(
-        "profileNameValue"
-    ).textContent =
-        name;
-
-
-    document.getElementById(
-        "profileMobileValue"
-    ).textContent =
-        phone;
-
-
-    document.getElementById(
-        "profileLocationValue"
-    ).textContent =
-
-        vendor.vendor_location ||
-
-        vendor.location ||
-
-        "Not added";
-
-
-    const open =
-        String(
-            vendor.store_status ||
-            ""
-        )
-        .toLowerCase() ===
-        "open";
-
-
-    storeStatusSwitch.checked =
-        open;
-
-
-    document.getElementById(
-        "storeStatusText"
-    ).textContent =
-        open
-        ? "Open"
-        : "Closed";
-
-}
-
-
-storeStatusSwitch.addEventListener(
-"change",
-async () => {
-
-    if(
-        !currentVendor
-    ){
-        return;
-    }
-
-
-    const open =
-        storeStatusSwitch.checked;
-
-
-    storeStatusSwitch.disabled =
-        true;
-
-
-    try{
-
-
-        const {
-            error
-        } =
-        await sb
-        .from(
-            "vendor_login"
-        )
-        .update({
-
-            store_status:
-                open
-                ? "open"
-                : "closed"
-
-        })
-        .eq(
-            "id",
-            currentVendor.id
-        );
-
-
-        if(error){
-            throw error;
-        }
-
-
-        currentVendor.store_status =
-            open
-            ? "open"
-            : "closed";
-
-
-        document.getElementById(
-            "storeStatusText"
-        ).textContent =
-            open
-            ? "Open"
-            : "Closed";
-
-
-        toast(
-            open
-            ? "Store opened"
-            : "Store closed"
-        );
-
-
-    }catch(error){
-
-
-        storeStatusSwitch.checked =
-            !open;
-
-
-        toast(
-            "Store update failed",
-            true
-        );
-
-
-    }finally{
-
-
-        storeStatusSwitch.disabled =
-            false;
-
-
-    }
-
-});
-
-
-/* ===========================
-   VENDOR PRODUCTS
-=========================== */
-
-async function loadVendorProducts(){
-
-    productsDisplay.innerHTML = `
-        <div class="loading-spinner-only">
-            <div class="spinner"></div>
-        </div>
-    `;
-
-
-    const all = [];
-
-
-    for(
-        const table
-        of PRODUCT_TABLES
-    ){
-
-
-        const {
-            data,
-            error
-        } =
-        await sb
-        .from(table)
-        .select("*")
-        .eq(
-            "vendor_id",
-            currentVendor.id
-        );
-
-
-        if(error){
-
-            console.error(
-                table,
-                error
-            );
-
-            continue;
-
-        }
-
-
-        (
-            data || []
-        )
-        .forEach(
-            product => {
-
-                all.push({
-
-                    ...product,
-
-                    product_table:
-                        table
-
-                });
-
-            }
-        );
-
-
-    }
-
-
-    vendorProducts =
-        all;
-
-
-    document.getElementById(
-        "productsCounter"
-    ).textContent =
-        `${all.length} products`;
-
-
-    renderProducts();
-
-}
-
-
-function createVendorProductMap(){
-
-    const map =
-        new Map();
-
-
-    vendorProducts.forEach(
-        product => {
-
-            map.set(
-
-                productKey(
-                    product.product_table,
-                    product.id
-                ),
-
-                product
-
-            );
-
-        }
-    );
-
-
-    return map;
-
-}
-
-
-/* ===========================
-   PREPARE VENDOR ORDER
-=========================== */
-
-function prepareVendorOrder(
-    row,
-    config
-){
-
-    if(
-        !row
-    ){
-        return null;
-    }
-
-
-    const status =
-        String(
-
-            row.order_status ||
-
-            row.status ||
-
-            ""
-
-        )
+    function normalizeStatus(order){
+      return String(order.order_status || order.status || "placed")
+        .trim()
         .toLowerCase()
-        .trim();
-
-
-    /*
-    PACKED / DELIVERED / CANCELLED
-    should not return after refresh.
-    */
-
-    if(
-        status === "packed" ||
-        status === "delivered" ||
-        status === "cancelled" ||
-        status === "canceled"
-    ){
-        return null;
+        .replaceAll(" ","_");
     }
 
-
-    const items =
-        getOrderItems(
-            row
-        );
-
-
-    if(
-        !items.length
-    ){
-        return null;
+    function cancelled(order){
+      return ["cancelled","canceled"].includes(normalizeStatus(order));
     }
 
-
-    const productMap =
-        createVendorProductMap();
-
-
-    const matching = [];
-
-
-    items.forEach(
-        item => {
-
-
-            const table =
-                getProductTable(item);
-
-
-            const id =
-                getProductId(item);
-
-
-            if(
-                !table ||
-                id === null
-            ){
-                return;
-            }
-
-
-            const product =
-                productMap.get(
-
-                    productKey(
-                        table,
-                        id
-                    )
-
-                );
-
-
-            if(product){
-
-                matching.push({
-
-                    ...item,
-
-                    _product:
-                        product
-
-                });
-
-            }
-
-
-        }
-    );
-
-
-    if(
-        !matching.length
-    ){
-        return null;
+    function delivered(order){
+      return normalizeStatus(order) === "delivered";
     }
 
+    function showToast(message,error=false){
+      toast.textContent = message;
+      toast.classList.toggle("error",error);
+      toast.classList.add("show");
 
-    return {
-
-        ...row,
-
-        _sourceTable:
-            config.table,
-
-        _orderType:
-            config.type,
-
-        _payment:
-            config.payment,
-
-        _deliveryTable:
-            config.deliveryTable,
-
-        _vendorItems:
-            matching,
-
-        _vendorStatus:
-            "waiting",
-
-        _sentToDelivery:
-            false
-
-    };
-
-}
-
-
-function addOrReplaceOrder(
-    row,
-    config
-){
-
-    const prepared =
-        prepareVendorOrder(
-            row,
-            config
-        );
-
-
-    if(
-        !prepared
-    ){
-        return false;
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(()=>{
+        toast.classList.remove("show");
+      },2200);
     }
 
-
-    const index =
-        vendorOrders.findIndex(
-            order =>
-
-                order._sourceTable ===
-                config.table
-
-                &&
-
-                String(order.id) ===
-                String(prepared.id)
-        );
-
-
-    if(
-        index >= 0
-    ){
-
-        vendorOrders[index] =
-            prepared;
-
-    }else{
-
-        vendorOrders.push(
-            prepared
-        );
-
+    function statusClass(status){
+      const allowed = [
+        "new","placed","pending","confirmed","packed",
+        "on_the_way","out_for_delivery","cancelled","canceled"
+      ];
+      return allowed.includes(status) ? status : "default";
     }
 
+    function formatDate(value){
+      if(!value) return "Just now";
 
-    sortVendorOrders();
+      const d = new Date(value);
+      if(Number.isNaN(d.getTime())) return "";
 
-
-    return true;
-
-}
-
-
-function sortVendorOrders(){
-
-    vendorOrders.sort(
-        (a,b) => {
-
-
-            const aDate =
-                new Date(
-                    a.created_at || 0
-                ).getTime();
-
-
-            const bDate =
-                new Date(
-                    b.created_at || 0
-                ).getTime();
-
-
-            if(
-                aDate !== bDate
-            ){
-                return aDate - bDate;
-            }
-
-
-            return (
-                Number(a.id || 0)
-                -
-                Number(b.id || 0)
-            );
-
-        }
-    );
-
-}
-
-
-/* ===========================
-   LOAD PENDING ORDERS
-   AFTER ORIGINAL START POINT
-=========================== */
-
-async function loadPendingOrdersFromStart(){
-    if(!currentVendor){
-        return;
+      return d.toLocaleString("en-IN",{
+        day:"2-digit",
+        month:"short",
+        hour:"2-digit",
+        minute:"2-digit"
+      });
     }
 
-    const startTime = getOrderTrackingStart();
-    if(startTime === null){
-        console.error("Order tracking start time is missing");
-        return;
+    function orderKey(order){
+      return `${order._table}:${order.id ?? order.order_id}`;
     }
 
-    const loaded = [];
+    function addOrUpdateOrder(order){
+      const key = orderKey(order);
+      const index = orders.findIndex(x=>orderKey(x)===key);
 
-    for(const config of ORDER_TABLES){
-        const { data, error } = await sb
-            .from(config.table)
-            .select("*")
-            .gt("created_at", new Date(startTime).toISOString())
-            .order("created_at", { ascending:true })
-            .limit(500);
+      if(index >= 0){
+        orders[index] = order;
+      }else{
+        orders.unshift(order);
+      }
 
-        if(error){
-            console.error("Pending load error:", config.table, error);
-            continue;
-        }
+      orders.sort((a,b)=>{
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      });
+    }
 
-        (data || []).forEach(row => {
-            const prepared = prepareVendorOrder(row, config);
-            if(prepared) loaded.push(prepared);
+    function mapLink(order){
+      const lat = Number(order.latitude);
+      const lng = Number(order.longitude);
+
+      if(Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0){
+        return `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
+      }
+
+      const place = [
+        order.address,
+        order.village,
+        order.city,
+        order.pincode
+      ].filter(Boolean).join(", ");
+
+      if(!place) return "";
+
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
+    }
+
+    async function fetchProducts(items){
+      if(!Array.isArray(items) || !items.length) return [];
+
+      const grouped = {};
+
+      for(const item of items){
+        const table = String(
+          item.product_table ||
+          item.table_name ||
+          item.table ||
+          ""
+        ).trim();
+
+        const id = Number(item.product_id ?? item.id);
+
+        const qty = number(
+          item.qty ??
+          item.quantity ??
+          item.count ??
+          1
+        ) || 1;
+
+        if(!table || !Number.isFinite(id)) continue;
+
+        if(!grouped[table]) grouped[table] = [];
+        grouped[table].push({id,qty});
+      }
+
+      const finalProducts = [];
+
+      for(const [table, rows] of Object.entries(grouped)){
+        const ids = [...new Set(rows.map(x=>x.id))];
+
+        const missingIds = ids.filter(id=>{
+          return !productCache[`${table}_${id}`];
         });
+
+        if(missingIds.length){
+          const {data,error} = await db
+            .from(table)
+            .select("id,name,name_telugu,quantity,unit,original_price,discount_price,image1")
+            .in("id",missingIds);
+
+          if(error){
+            console.error("Product load error:",table,error);
+          }else{
+            for(const product of (data || [])){
+              productCache[`${table}_${product.id}`] = {
+                ...product,
+                product_table:table
+              };
+            }
+          }
+        }
+
+        for(const row of rows){
+          const product = productCache[`${table}_${row.id}`];
+
+          if(product){
+            finalProducts.push({
+              ...product,
+              ordered_qty:row.qty
+            });
+          }else{
+            finalProducts.push({
+              id:row.id,
+              product_table:table,
+              ordered_qty:row.qty,
+              _missing:true
+            });
+          }
+        }
+      }
+
+      return finalProducts;
     }
 
-    vendorOrders = loaded;
-    sortVendorOrders();
-    renderOrders();
-}
-
-/* ===========================
-   PRODUCTS REALTIME
-=========================== */
-
-function stopProductRealtime(){
-
-    productChannels.forEach(
-        channel => {
-
-            try{
-                sb.removeChannel(channel);
-            }catch(error){}
-
-        }
-    );
-
-    productChannels = [];
-
-}
-
-
-async function startProductRealtime(){
-
-    stopProductRealtime();
-
-    if(
-        !currentVendor
-    ){
-        return;
+    async function enrichOrder(order){
+      const items = Array.isArray(order.items) ? order.items : [];
+      order._products = await fetchProducts(items);
+      return order;
     }
 
-    PRODUCT_TABLES.forEach(
-        table => {
-
-            const channel =
-                sb.channel(
-                    `vendor_products_live_${table}_${currentVendor.id}`
-                )
-
-                .on(
-                    "postgres_changes",
-                    {
-                        event:"INSERT",
-                        schema:"public",
-                        table:table,
-                        filter:`vendor_id=eq.${currentVendor.id}`
-                    },
-                    payload => {
-
-                        const product =
-                            payload.new;
-
-                        if(
-                            !product
-                        ){
-                            return;
-                        }
-
-                        const exists =
-                            vendorProducts.some(
-                                item =>
-                                    item.product_table === table
-                                    &&
-                                    String(item.id) === String(product.id)
-                            );
-
-                        if(
-                            !exists
-                        ){
-
-                            vendorProducts.push({
-                                ...product,
-                                product_table:table
-                            });
-
-                            vendorProducts.sort(
-                                (a,b) =>
-                                    Number(a.id || 0) -
-                                    Number(b.id || 0)
-                            );
-
-                            document.getElementById(
-                                "productsCounter"
-                            ).textContent =
-                                `${vendorProducts.length} products`;
-
-                            renderProducts();
-
-                            toast(
-                                "New product added"
-                            );
-
-                        }
-
-                    }
-                )
-
-                .on(
-                    "postgres_changes",
-                    {
-                        event:"UPDATE",
-                        schema:"public",
-                        table:table,
-                        filter:`vendor_id=eq.${currentVendor.id}`
-                    },
-                    payload => {
-
-                        const product =
-                            payload.new;
-
-                        const index =
-                            vendorProducts.findIndex(
-                                item =>
-                                    item.product_table === table
-                                    &&
-                                    String(item.id) === String(product.id)
-                            );
-
-                        if(
-                            index >= 0
-                        ){
-
-                            vendorProducts[index] = {
-                                ...vendorProducts[index],
-                                ...product,
-                                product_table:table
-                            };
-
-                        }
-                        else{
-
-                            vendorProducts.push({
-                                ...product,
-                                product_table:table
-                            });
-
-                        }
-
-                        document.getElementById(
-                            "productsCounter"
-                        ).textContent =
-                            `${vendorProducts.length} products`;
-
-                        renderProducts();
-
-                    }
-                )
-
-                .on(
-                    "postgres_changes",
-                    {
-                        event:"DELETE",
-                        schema:"public",
-                        table:table,
-                        filter:`vendor_id=eq.${currentVendor.id}`
-                    },
-                    payload => {
-
-                        vendorProducts =
-                            vendorProducts.filter(
-                                item =>
-                                    !(
-                                        item.product_table === table
-                                        &&
-                                        String(item.id) ===
-                                        String(payload.old.id)
-                                    )
-                            );
-
-                        document.getElementById(
-                            "productsCounter"
-                        ).textContent =
-                            `${vendorProducts.length} products`;
-
-                        renderProducts();
-
-                    }
-                );
-
-            productChannels.push(channel);
-
-            channel.subscribe(
-                status => {
-
-                    console.log(
-                        `Products realtime ${table}:`,
-                        status
-                    );
-
-                }
-            );
-
-        }
-    );
-
-}
-
-
-/* ===========================
-   REALTIME
-=========================== */
-
-function stopRealtime(){
-
-    channels.forEach(
-        channel => {
-
-            try{
-                sb.removeChannel(
-                    channel
-                );
-            }catch(error){}
-
-        }
-    );
-
-
-    channels = [];
-
-}
-
-
-async function startRealtime(){
-
-    stopRealtime();
-
-
-    const subscriptions = [];
-
-
-    ORDER_TABLES.forEach(
-        config => {
-
-
-            const channel =
-                sb.channel(
-
-                    `vendor_live_${config.table}_${currentVendor.id}`
-
-                )
-
-
-                .on(
-
-                    "postgres_changes",
-
-                    {
-                        event:"INSERT",
-                        schema:"public",
-                        table:config.table
-                    },
-
-                    payload => {
-
-
-                        const row =
-                            payload.new;
-
-
-                        const startTime = getOrderTrackingStart();
-                        const rowTime = new Date(row.created_at || 0).getTime();
-
-                        if(startTime === null || !Number.isFinite(rowTime) || rowTime <= startTime){
-                            return;
-                        }
-
-
-                        const added =
-                            addOrReplaceOrder(
-                                row,
-                                config
-                            );
-
-
-                        if(added){
-
-                            renderOrders();
-
-                            toast(
-                                "New order received"
-                            );
-
-                        }
-
-
-                    }
-
-                )
-
-
-                .on(
-
-                    "postgres_changes",
-
-                    {
-                        event:"UPDATE",
-                        schema:"public",
-                        table:config.table
-                    },
-
-                    payload => {
-
-
-                        const row =
-                            payload.new;
-
-
-                        const startTime = getOrderTrackingStart();
-                        const rowTime = new Date(row.created_at || 0).getTime();
-
-                        if(startTime === null || !Number.isFinite(rowTime) || rowTime <= startTime){
-                            return;
-                        }
-
-
-                        const status =
-                            String(
-
-                                row.order_status ||
-
-                                row.status ||
-
-                                ""
-
-                            )
-                            .toLowerCase()
-                            .trim();
-
-
-                        /*
-                        Packed/delivered rows are removed
-                        from vendor queue.
-                        */
-
-                        if(
-                            status === "packed" ||
-                            status === "delivered" ||
-                            status === "cancelled" ||
-                            status === "canceled"
-                        ){
-
-                            vendorOrders =
-                                vendorOrders.filter(
-                                    order =>
-
-                                        !(
-                                            order._sourceTable ===
-                                            config.table
-
-                                            &&
-
-                                            String(order.id) ===
-                                            String(row.id)
-                                        )
-                                );
-
-
-                            renderOrders();
-
-
-                            return;
-
-                        }
-
-
-                        addOrReplaceOrder(
-                            row,
-                            config
-                        );
-
-
-                        renderOrders();
-
-
-                    }
-
-                );
-
-
-            channels.push(
-                channel
-            );
-
-
-            subscriptions.push(
-
-                new Promise(
-                    resolve => {
-
-
-                        channel.subscribe(
-                            status => {
-
-
-                                if(
-                                    status === "SUBSCRIBED" ||
-                                    status === "CHANNEL_ERROR" ||
-                                    status === "TIMED_OUT"
-                                ){
-
-                                    resolve();
-
-                                }
-
-
-                            }
-                        );
-
-
-                    }
-                )
-
-            );
-
-
-        }
-    );
-
-
-    await Promise.race([
-
-        Promise.all(
-            subscriptions
-        ),
-
-        new Promise(
-            resolve =>
-                setTimeout(
-                    resolve,
-                    4000
-                )
-        )
-
-    ]);
-
-}
-
-
-/* ===========================
-   QUEUE
-=========================== */
-
-function getCurrentOrder(){
-
-    return vendorOrders[0] || null;
-
-}
-
-
-function updateCounts(){
-
-    document.getElementById(
-        "packedCount"
-    ).textContent =
-        "0";
-
-
-    document.getElementById(
-        "ordersLeftCount"
-    ).textContent =
-        vendorOrders.length;
-
-}
-
-
-/* ===========================
-   ORDER UI
-=========================== */
-
-function renderOrders(){
-    renderAnalytics();
-
-    updateCounts();
-
-
-    const order =
-        getCurrentOrder();
-
-
-    if(
-        !order
-    ){
-
-        ordersDisplay.innerHTML = `
-            <div class="empty-orders">
-
-                <div class="empty-icon">
-                    <i class="fa-solid fa-receipt"></i>
-                </div>
-
-                <h2>
-                    No orders waiting
-                </h2>
-
-                <p>
-                    New live orders will appear automatically.
-                </p>
-
-            </div>
+    function renderProducts(products){
+      if(!products || !products.length){
+        return `
+          <div style="padding:12px 0 16px;color:#90959d;font-size:10px">
+            Product details not available.
+          </div>
         `;
+      }
 
+      return products.map(product=>{
+        const qty = number(product.ordered_qty) || 1;
 
-        return;
+        if(product._missing){
+          return `
+            <div class="productRow">
+              <div class="productImage">
+                <i class="fa-solid fa-box"></i>
+              </div>
 
-    }
+              <div>
+                <div class="productName">
+                  Product ID ${safe(product.id)}
+                </div>
+                <div class="productPack">
+                  ${safe(product.product_table)}
+                </div>
+              </div>
 
+              <div class="productMeta">
+                <div class="qty">×${qty}</div>
+              </div>
+            </div>
+          `;
+        }
 
-    const items =
-        order._vendorItems ||
-        [];
-
-
-    const total =
-        items.reduce(
-            (
-                sum,
-                item
-            ) => {
-
-                return (
-
-                    sum +
-
-                    getPrice(
-                        item,
-                        item._product
-                    )
-
-                    *
-
-                    getQuantity(
-                        item
-                    )
-
-                );
-
-            },
-            0
+        const eachPrice = number(
+          product.discount_price ||
+          product.original_price
         );
 
+        const totalLine = eachPrice * qty;
 
-    ordersDisplay.innerHTML = `
+        const packText = [
+          product.quantity,
+          product.unit
+        ].filter(Boolean).join(" ");
 
-        <article class="order-card">
+        return `
+          <div class="productRow">
 
-            <div class="order-top">
-
-                <div>
-
-                    <div class="order-id">
-
-                        Order #${escapeHTML(
-                            getOrderId(order)
-                        )}
-
-                    </div>
-
-                    <div class="order-time">
-
-                        ${escapeHTML(
-                            formatDate(
-                                order.created_at
-                            )
-                        )}
-
-                    </div>
-
-                </div>
-
-
-                <div class="payment-chip">
-
-                    ${escapeHTML(
-                        order._payment
-                    )}
-
-                </div>
-
+            <div class="productImage">
+              ${
+                product.image1
+                ? `<img src="${safe(product.image1)}" alt="${safe(product.name || "Product")}" loading="lazy">`
+                : `<i class="fa-solid fa-box"></i>`
+              }
             </div>
 
+            <div>
+              <div class="productName">
+                ${safe(product.name || `Product ${product.id}`)}
+              </div>
 
-            <div class="items-head">
-
-                <strong>
-                    Total Items
-                </strong>
-
-                <div class="items-count">
-                    ${items.reduce((sum, item) => sum + getQuantity(item), 0)}
-                </div>
-
+              <div class="productPack">
+                ${safe(packText || "Unit")}
+              </div>
             </div>
 
-
-            <div class="items-wrap">
-
-                ${
-                    items
-                    .map(
-                        item => {
-
-
-                            const product =
-                                item._product;
-
-
-                            const image =
-                                getImage(
-                                    item,
-                                    product
-                                );
-
-
-                            const quantity =
-                                getQuantity(item);
-
-
-                            const price =
-                                getPrice(
-                                    item,
-                                    product
-                                );
-
-
-                            const pack =
-                                [
-
-                                    product?.quantity,
-
-                                    product?.unit,
-
-                                    product?.weight,
-
-                                    product?.size
-
-                                ]
-                                .filter(
-                                    value =>
-                                        value !== null &&
-                                        value !== undefined &&
-                                        String(value).trim()
-                                )
-                                .join(" ");
-
-
-                            return `
-
-                                <div class="order-item">
-
-                                    <div class="order-image">
-
-                                        ${
-                                            image
-
-                                            ? `
-                                                <img
-                                                    src="${escapeHTML(image)}"
-                                                    alt=""
-                                                >
-                                            `
-
-                                            : `
-                                                <i class="fa-solid fa-box"></i>
-                                            `
-                                        }
-
-                                    </div>
-
-
-                                    <div class="order-product">
-
-                                        <div class="product-title">
-
-                                            ${escapeHTML(
-                                                getProductName(
-                                                    item,
-                                                    product
-                                                )
-                                            )}
-
-                                        </div>
-
-
-                                        <div class="product-sub">
-
-                                            ${escapeHTML(
-                                                pack ||
-                                                getProductTable(item)
-                                            )}
-
-                                        </div>
-
-
-                                        <div class="product-price">
-
-                                            ₹${price.toFixed(2)}
-
-                                        </div>
-
-                                    </div>
-
-
-                                    <div class="qty-box">
-
-                                        ×${quantity}
-
-                                    </div>
-
-                                </div>
-
-                            `;
-
-                        }
-                    )
-                    .join("")
-                }
-
+            <div class="productMeta">
+              <div class="qty">×${qty}</div>
+              <div class="linePrice">${money(totalLine)}</div>
+              <div class="singlePrice">${money(eachPrice)} each</div>
             </div>
 
+          </div>
+        `;
+      }).join("");
+    }
 
+    function billRows(order){
+      const subtotal = number(
+        order.subtotal ??
+        order.items_total ??
+        order.cart_total
+      );
 
-            <div class="customer-strip">
+      const deliveryFee = number(
+        order.delivery_charge ??
+        order.delivery_fee ??
+        order.delivery_charges
+      );
 
-                <div class="customer-name">
+      const handlingFee = number(
+        order.handling_fee ??
+        order.handling_charges ??
+        order.platform_fee
+      );
 
-                    ${escapeHTML(
-                        getCustomerName(order)
-                    )}
+      const discount = number(
+        order.discount ??
+        order.discount_amount ??
+        order.coupon_discount
+      );
 
-                </div>
+      const total = number(
+        order.total_amount ??
+        order.total ??
+        order.grand_total
+      );
 
+      let rows = "";
 
-                <div class="customer-meta">
+      if(subtotal > 0){
+        rows += `
+          <div class="billRow">
+            <span>Items total</span>
+            <strong>${money(subtotal)}</strong>
+          </div>
+        `;
+      }
 
-                    ${
-                        getCustomerMobile(order)
+      if(deliveryFee > 0){
+        rows += `
+          <div class="billRow">
+            <span>Delivery charge</span>
+            <strong>${money(deliveryFee)}</strong>
+          </div>
+        `;
+      }
 
-                        ? `
-                            <span>
-                                <i class="fa-solid fa-phone"></i>
+      if(handlingFee > 0){
+        rows += `
+          <div class="billRow">
+            <span>Handling fee</span>
+            <strong>${money(handlingFee)}</strong>
+          </div>
+        `;
+      }
 
-                                ${escapeHTML(
-                                    getCustomerMobile(order)
-                                )}
-                            </span>
-                        `
+      if(discount > 0){
+        rows += `
+          <div class="billRow">
+            <span>Discount</span>
+            <strong>- ${money(discount)}</strong>
+          </div>
+        `;
+      }
 
-                        : ""
-                    }
+      return `
+        ${rows}
+        <div class="billTotal">
+          <span>Total Bill</span>
+          <strong>${money(total)}</strong>
+        </div>
+      `;
+    }
 
+    function updateCounts(){
+      const newOrders = orders.filter(o=>{
+        return !cancelled(o) && !delivered(o);
+      });
 
-                    ${
-                        getCustomerAddress(order)
+      const cancelledOrders = orders.filter(o=>{
+        return cancelled(o) && !delivered(o);
+      });
 
-                        ? `
-                            <span>
-                                <i class="fa-solid fa-location-dot"></i>
+      newCount.textContent = newOrders.length;
+      cancelledCount.textContent = cancelledOrders.length;
+      bottomNewCount.textContent = newOrders.length;
+      bottomCancelledCount.textContent = cancelledOrders.length;
+    }
 
-                                ${escapeHTML(
-                                    getCustomerAddress(order)
-                                )}
-                            </span>
-                        `
+    function visibleOrders(){
+      if(activeTab === "cancelled"){
+        return orders.filter(order=>{
+          return cancelled(order) && !delivered(order);
+        });
+      }
 
-                        : ""
-                    }
+      return orders.filter(order=>{
+        return !cancelled(order) && !delivered(order);
+      });
+    }
 
-                </div>
+    function render(){
+      updateCounts();
 
+      const list = visibleOrders();
 
-                <div class="distance-badge">
-
-                    <i class="fa-solid fa-route"></i>
-
-                    ${escapeHTML(
-                        getDistance(order)
-                    )}
-
-                </div>
-
+      if(!list.length){
+        ordersList.innerHTML = `
+          <div class="empty">
+            <div class="emptyIcon">
+              <i class="fa-solid ${
+                activeTab === "cancelled"
+                ? "fa-ban"
+                : "fa-bag-shopping"
+              }"></i>
             </div>
 
+            <h3>
+              ${
+                activeTab === "cancelled"
+                ? "No cancelled orders"
+                : "No new orders"
+              }
+            </h3>
 
-            <div class="order-summary">
+            <p>
+              ${
+                activeTab === "cancelled"
+                ? "Cancelled orders from now onward will appear here."
+                : "New orders placed from now onward will appear here automatically."
+              }
+            </p>
+          </div>
+        `;
+        return;
+      }
 
-                <div>
+      ordersList.innerHTML = list.map(order=>{
+        const originalIndex = orders.findIndex(x=>{
+          return orderKey(x) === orderKey(order);
+        });
 
-                    <div class="summary-label">
-                        YOUR ITEMS TOTAL
-                    </div>
+        const status = normalizeStatus(order);
+        const mobile = String(
+          order.user_mobile ||
+          order.mobile ||
+          order.phone ||
+          ""
+        ).trim();
 
-                    <div class="summary-value">
-                        ₹${total.toFixed(2)}
-                    </div>
+        const location = [
+          order.address,
+          order.village,
+          order.city,
+          order.pincode
+        ].filter(Boolean).join(", ");
 
+        const map = mapLink(order);
+
+        return `
+          <article class="orderItem">
+
+            <div class="orderHead">
+              <div>
+                <div class="orderId">
+                  Order #${safe(order.order_id ?? order.id ?? "—")}
                 </div>
 
+                <div class="orderTime">
+                  ${safe(formatDate(order.created_at))}
+                  &nbsp;·&nbsp;
+                  ${safe(order._payment)}
+                </div>
+              </div>
 
-                <button
-                    class="pack-btn"
-                    type="button"
-                    onclick="packOrder(
-                        '${escapeHTML(
-                            order._sourceTable
-                        )}',
-                        '${escapeHTML(
-                            order.id
-                        )}',
-                        this
-                    )"
+              <div class="status ${statusClass(status)}">
+                ${safe(status.replaceAll("_"," "))}
+              </div>
+            </div>
+
+            <section class="customerSection">
+              <div>
+                <div class="sectionLabel">Customer</div>
+
+                <div class="customerName">
+                  ${safe(order.user_name || order.customer_name || "Customer")}
+                </div>
+
+                <div class="customerLine">
+                  <i class="fa-solid fa-phone"></i>
+                  ${
+                    mobile
+                    ? `<a href="tel:${safe(mobile)}">${safe(mobile)}</a>`
+                    : `<span>Mobile unavailable</span>`
+                  }
+                </div>
+
+                <div class="customerLine">
+                  <i class="fa-solid fa-location-dot"></i>
+                  <span>${safe(location || "Location unavailable")}</span>
+                </div>
+              </div>
+
+              ${
+                map
+                ? `
+                  <a
+                    class="mapBtn"
+                    href="${safe(map)}"
+                    target="_blank"
+                    rel="noopener"
+                    title="Open location"
+                  >
+                    <i class="fa-solid fa-location-arrow"></i>
+                  </a>
+                `
+                : ""
+              }
+            </section>
+
+            <section class="productsSection">
+              <div class="sectionLabel">Products</div>
+              ${renderProducts(order._products)}
+            </section>
+
+            <section class="billSection">
+              <div class="sectionLabel">Bill Details</div>
+              ${billRows(order)}
+            </section>
+
+            <section class="statusSection">
+              <div style="min-width:64px">
+                <div class="sectionLabel" style="margin:0">Status</div>
+              </div>
+              <select
+                id="status-${originalIndex}"
+                class="statusSelect"
+              >
+                <option value="placed"
+                  ${
+                    ["new","placed","pending"].includes(status)
+                    ? "selected"
+                    : ""
+                  }
                 >
-                    Packed
-                </button>
+                  New / Placed
+                </option>
 
-            </div>
+                <option value="confirmed"
+                  ${status === "confirmed" ? "selected" : ""}
+                >
+                  Confirmed
+                </option>
 
-        </article>
+                <option value="packed"
+                  ${status === "packed" ? "selected" : ""}
+                >
+                  Packed
+                </option>
 
-    `;
+                <option value="on_the_way"
+                  ${
+                    ["on_the_way","out_for_delivery"].includes(status)
+                    ? "selected"
+                    : ""
+                  }
+                >
+                  On the way
+                </option>
 
-}
+                <option value="delivered">
+                  Delivered
+                </option>
 
+                <option value="cancelled"
+                  ${cancelled(order) ? "selected" : ""}
+                >
+                  Cancelled
+                </option>
+              </select>
 
-/* ===========================
-   SEND TO DELIVERY
-=========================== */
+              <button
+                class="updateBtn"
+                onclick="updateOrderStatus(${originalIndex},this)"
+              >
+                Update
+              </button>
+            </section>
 
-async function autoSendToDelivery(
-    order
-){
+          </article>
+        `;
+      }).join("");
+    }
 
-    const payload = {
-        ...order
+    async function loadCurrentSessionOrders(){
+      try{
+        const results = await Promise.all(
+          ORDER_TABLES.map(config=>{
+            return db
+              .from(config.name)
+              .select("*")
+              .gte("created_at",PAGE_OPENED_AT)
+              .order("created_at",{ascending:false});
+          })
+        );
+
+        for(let i=0;i<results.length;i++){
+          const config = ORDER_TABLES[i];
+          const result = results[i];
+
+          if(result.error){
+            console.error(config.name,result.error);
+            continue;
+          }
+
+          for(const row of (result.data || [])){
+            const full = await enrichOrder({
+              ...row,
+              _table:config.name,
+              _payment:config.payment
+            });
+
+            addOrUpdateOrder(full);
+          }
+        }
+
+        render();
+
+      }catch(error){
+        console.error(error);
+        showToast(
+          error.message || "Unable to load orders",
+          true
+        );
+      }
+    }
+
+    async function handleRealtime(config,payload){
+      try{
+        const row = payload.new;
+        if(!row) return;
+
+        const createdAt = new Date(
+          row.created_at || 0
+        ).getTime();
+
+        const pageOpened = new Date(
+          PAGE_OPENED_AT
+        ).getTime();
+
+        if(createdAt && createdAt < pageOpened){
+          return;
+        }
+
+        const full = await enrichOrder({
+          ...row,
+          _table:config.name,
+          _payment:config.payment
+        });
+
+        const alreadyExists = orders.some(x=>{
+          return orderKey(x) === orderKey(full);
+        });
+
+        addOrUpdateOrder(full);
+        render();
+
+        if(payload.eventType === "INSERT" && !alreadyExists){
+          showToast("New order received");
+        }
+
+      }catch(error){
+        console.error("Realtime error:",error);
+      }
+    }
+
+    function startRealtime(){
+      ORDER_TABLES.forEach(config=>{
+        db
+          .channel(`orders-${config.name}-${Date.now()}`)
+          .on(
+            "postgres_changes",
+            {
+              event:"*",
+              schema:"public",
+              table:config.name
+            },
+            payload=>handleRealtime(config,payload)
+          )
+          .subscribe(status=>{
+            if(status === "CHANNEL_ERROR"){
+              console.error(
+                `Realtime channel error: ${config.name}`
+              );
+            }
+          });
+      });
+    }
+
+    window.updateOrderStatus = async function(index,button){
+      const order = orders[index];
+      if(!order) return;
+
+      const select = document.getElementById(
+        `status-${index}`
+      );
+
+      if(!select) return;
+
+      const newStatus = select.value;
+      const oldButton = button.innerHTML;
+
+      button.disabled = true;
+      button.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+      try{
+        const {error} = await db
+          .from(order._table)
+          .update({
+            order_status:newStatus
+          })
+          .eq("id",order.id);
+
+        if(error) throw error;
+
+        order.order_status = newStatus;
+        addOrUpdateOrder(order);
+        render();
+
+        if(newStatus === "cancelled"){
+          showToast("Order moved to Cancelled");
+        }else if(newStatus === "delivered"){
+          showToast("Delivered order removed");
+        }else{
+          showToast("Order status updated");
+        }
+
+      }catch(error){
+        console.error(error);
+
+        showToast(
+          error.message || "Status update failed",
+          true
+        );
+
+        button.disabled = false;
+        button.innerHTML = oldButton;
+      }
     };
 
+    function switchTab(tabName){
+      activeTab = tabName;
 
-    delete payload._sourceTable;
-    delete payload._orderType;
-    delete payload._payment;
-    delete payload._deliveryTable;
-    delete payload._vendorStatus;
-    delete payload._sentToDelivery;
-    delete payload._vendorItems;
-
-
-    payload.source_order_id =
-        String(
-            getOrderId(order)
+      document.querySelectorAll(".tab").forEach(button=>{
+        button.classList.toggle(
+          "active",
+          button.dataset.tab === tabName
         );
+      });
 
-
-    payload.source_order_type =
-        order._orderType;
-
-
-    payload.sent_to_delivery_at =
-        new Date().toISOString();
-
-
-    payload.delivery_status =
-        "assigned";
-
-
-    payload.vendor_id =
-        currentVendor.id;
-
-
-    payload.vendor_name =
-        currentVendor.vendor_name ||
-        "";
-
-
-    payload.vendor_mobile =
-        currentVendor.mobile ||
-        "";
-
-
-    payload.vendor_packed_at =
-        new Date().toISOString();
-
-
-    payload.items =
-        order._vendorItems.map(
-            item => {
-
-
-                const clean = {
-                    ...item
-                };
-
-
-                delete clean._product;
-
-
-                return clean;
-
-            }
+      document.querySelectorAll(".bottomBtn").forEach(button=>{
+        button.classList.toggle(
+          "active",
+          button.dataset.bottom === tabName
         );
+      });
 
-
-    /*
-    Avoid duplicate sends after a user
-    accidentally taps twice/reloads.
-
-    First check delivery table using
-    source_order_id + vendor_id.
-    */
-
-    const {
-        data:existing,
-        error:checkError
-    } =
-    await sb
-    .from(
-        order._deliveryTable
-    )
-    .select("id")
-    .eq(
-        "source_order_id",
-        String(
-            getOrderId(order)
-        )
-    )
-    .eq(
-        "vendor_id",
-        currentVendor.id
-    )
-    .limit(1);
-
-
-    if(checkError){
-
-        console.warn(
-            "Delivery duplicate check:",
-            checkError
-        );
-
+      render();
+      window.scrollTo({top:0,behavior:"smooth"});
     }
 
-
-    if(
-        existing &&
-        existing.length
-    ){
-
-        return;
-
-    }
-
-
-    const {
-        error
-    } =
-    await sb
-    .from(
-        order._deliveryTable
-    )
-    .insert(
-        payload
-    );
-
-
-    if(error){
-        throw error;
-    }
-
-}
-
-
-/* ===========================
-   PACK ORDER
-=========================== */
-
-window.packOrder =
-async function(
-    sourceTable,
-    id,
-    button
-){
-
-    const order =
-        vendorOrders.find(
-            item =>
-
-                item._sourceTable ===
-                sourceTable
-
-                &&
-
-                String(item.id) ===
-                String(id)
-        );
-
-
-    if(
-        !order
-    ){
-        return;
-    }
-
-
-    const oldHtml =
-        button.innerHTML;
-
-
-    button.disabled =
-        true;
-
-
-    button.innerHTML =
-        '<i class="fa-solid fa-spinner fa-spin"></i>';
-
-
-    try{
-
-
-        /*
-        1. Send to delivery boy.
-        */
-
-        await autoSendToDelivery(
-            order
-        );
-
-
-        /*
-        2. Mark original customer order packed.
-
-        This DB status is what prevents the
-        order from coming back after refresh.
-        */
-
-        const {
-            error
-        } =
-        await sb
-        .from(
-            sourceTable
-        )
-        .update({
-
-            order_status:
-                "packed"
-
-        })
-        .eq(
-            "id",
-            id
-        );
-
-
-        if(error){
-            throw error;
-        }
-
-
-        /*
-        3. Remove locally immediately.
-        */
-
-        vendorOrders =
-            vendorOrders.filter(
-                item =>
-
-                    !(
-                        item._sourceTable ===
-                        sourceTable
-
-                        &&
-
-                        String(item.id) ===
-                        String(id)
-                    )
-            );
-
-
-        renderOrders();
-
-
-        toast(
-            "Packed & sent to delivery"
-        );
-
-
-    }catch(error){
-
-
-        console.error(
-            "Packed error:",
-            error
-        );
-
-
-        button.disabled =
-            false;
-
-
-        button.innerHTML =
-            oldHtml;
-
-
-        toast(
-            error.message ||
-            "Could not pack order",
-            true
-        );
-
-
-    }
-
-};
-
-
-/* ===========================
-   PRODUCTS PAGE
-=========================== */
-
-function renderProducts(){
-
-    if(
-        !vendorProducts.length
-    ){
-
-        productsDisplay.innerHTML = `
-            <div class="empty-orders">
-                <div class="empty-icon">
-                    <i class="fa-solid fa-box-open"></i>
-                </div>
-                <h2>No products</h2>
-            </div>
-        `;
-
-        return;
-    }
-
-
-    productsDisplay.innerHTML =
-        vendorProducts
-        .map(
-            product => {
-
-
-                const name =
-                    product.name ||
-                    product.product_name ||
-                    product.title ||
-                    `Product ${product.id}`;
-
-
-                const teluguName =
-                    getProductTeluguName(
-                        product
-                    );
-
-
-                const image =
-                    product.image1 ||
-                    product.image ||
-                    product.image_url ||
-                    "";
-
-
-                const priceKey =
-                    getEditablePriceKey(
-                        product
-                    );
-
-
-                const quantityKey =
-                    getEditableQuantityKey(
-                        product
-                    );
-
-
-                const unitKey =
-                    getEditableUnitKey(
-                        product
-                    );
-
-
-                const price =
-                    Number(
-                        priceKey
-                        ? product[priceKey]
-                        : 0
-                    );
-
-
-                const quantity =
-                    getProductQuantityValue(
-                        product
-                    );
-
-
-                const unit =
-                    getProductUnitValue(
-                        product
-                    );
-
-
-                const stock =
-                    !(
-                        product.stock === false
-                        ||
-                        product.stock === 0
-                        ||
-                        String(product.stock).toLowerCase() === "false"
-                        ||
-                        String(product.stock).toLowerCase() === "no"
-                    );
-
-
-                const domKey =
-                    productDomKey(
-                        product.product_table,
-                        product.id
-                    );
-
-
-                return `
-
-                    <div
-                        class="product-card"
-                        id="productCard_${domKey}"
-                    >
-
-                        <div class="product-image">
-
-                            ${
-                                image
-                                ? `
-                                    <img
-                                        src="${escapeHTML(image)}"
-                                        alt=""
-                                    >
-                                `
-                                : `
-                                    <i class="fa-solid fa-box"></i>
-                                `
-                            }
-
-                        </div>
-
-
-                        <div class="product-info">
-
-                            <div class="product-name">
-
-                                ${escapeHTML(name)}
-
-                            </div>
-
-
-                            ${
-                                teluguName
-                                ? `
-                                    <div class="product-telugu">
-                                        ${escapeHTML(teluguName)}
-                                    </div>
-                                `
-                                : ""
-                            }
-
-
-                            <div class="product-table-name">
-                                ${escapeHTML(product.product_table)}
-                            </div>
-
-
-                            <div class="product-meta">
-
-                                <div class="product-meta-chip">
-                                    Qty:&nbsp;
-                                    <span id="qtyText_${domKey}">
-                                        ${escapeHTML(
-                                            quantity === null ||
-                                            quantity === undefined ||
-                                            String(quantity).trim() === ""
-                                            ? "—"
-                                            : quantity
-                                        )}
-                                    </span>
-                                </div>
-
-                                <div class="product-meta-chip">
-                                    Unit:&nbsp;
-                                    <span id="unitText_${domKey}">
-                                        ${escapeHTML(
-                                            unit === null ||
-                                            unit === undefined ||
-                                            String(unit).trim() === ""
-                                            ? "—"
-                                            : unit
-                                        )}
-                                    </span>
-                                </div>
-
-                            </div>
-
-
-                            <div class="product-price-row">
-
-                                <div
-                                    class="product-price-value"
-                                    id="priceText_${domKey}"
-                                >
-                                    ₹${Number.isFinite(price)
-                                        ? price.toFixed(2)
-                                        : "0.00"}
-                                </div>
-
-
-                                <button
-                                    type="button"
-                                    class="product-edit-btn"
-                                    onclick="toggleProductEdit(
-                                        '${product.product_table}',
-                                        '${product.id}'
-                                    )"
-                                    aria-label="Edit price quantity and unit"
-                                >
-                                    <i class="fa-solid fa-pen"></i>
-                                </button>
-
-                            </div>
-
-
-                            <div
-                                class="product-edit-form"
-                                id="editForm_${domKey}"
-                            >
-
-                                <div class="product-edit-grid">
-
-                                    <div class="edit-field">
-                                        <label>PRICE</label>
-                                        <input
-                                            id="editPrice_${domKey}"
-                                            type="number"
-                                            step="0.01"
-                                            inputmode="decimal"
-                                            value="${escapeHTML(
-                                                Number.isFinite(price)
-                                                ? price
-                                                : ""
-                                            )}"
-                                            ${priceKey ? "" : "disabled"}
-                                        >
-                                    </div>
-
-
-                                    <div class="edit-field">
-                                        <label>QUANTITY</label>
-                                        <input
-                                            id="editQty_${domKey}"
-                                            type="text"
-                                            value="${escapeHTML(quantity ?? "")}"
-                                            ${quantityKey ? "" : "disabled"}
-                                        >
-                                    </div>
-
-
-                                    <div class="edit-field">
-                                        <label>UNIT</label>
-                                        <input
-                                            id="editUnit_${domKey}"
-                                            type="text"
-                                            value="${escapeHTML(unit ?? "")}"
-                                            ${unitKey ? "" : "disabled"}
-                                        >
-                                    </div>
-
-
-                                    <button
-                                        type="button"
-                                        class="product-save-btn"
-                                        id="saveProduct_${domKey}"
-                                        onclick="saveProductEdit(
-                                            '${product.product_table}',
-                                            '${product.id}',
-                                            this
-                                        )"
-                                        title="Save"
-                                    >
-                                        <i class="fa-solid fa-check"></i>
-                                    </button>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="stock-area">
-
-                            <span
-                                class="stock-text ${stock ? "on" : "off"}"
-                            >
-                                ${stock ? "IN STOCK" : "OUT"}
-                            </span>
-
-
-                            <label class="switch">
-
-                                <input
-                                    type="checkbox"
-                                    ${stock ? "checked" : ""}
-                                    onchange="changeStock(
-                                        '${product.product_table}',
-                                        '${product.id}',
-                                        this
-                                    )"
-                                >
-
-                                <span class="slider"></span>
-
-                            </label>
-
-                        </div>
-
-                    </div>
-
-                `;
-
-            }
-        )
-        .join("");
-
-}
-
-
-window.toggleProductEdit =
-function(
-    table,
-    id
-){
-
-    const key =
-        productDomKey(
-            table,
-            id
-        );
-
-
-    const form =
-        document.getElementById(
-            `editForm_${key}`
-        );
-
-
-    if(!form){
-        return;
-    }
-
-
-    form.classList.toggle(
-        "show"
-    );
-
-};
-
-
-
-window.saveProductEdit =
-async function(
-    table,
-    id,
-    button
-){
-
-    const product =
-        vendorProducts.find(
-            item =>
-                item.product_table === table
-                &&
-                String(item.id) === String(id)
-        );
-
-
-    if(!product){
-
-        toast(
-            "Product not found",
-            true
-        );
-
-        return;
-    }
-
-
-    const key =
-        productDomKey(
-            table,
-            id
-        );
-
-
-    const priceKey =
-        getEditablePriceKey(
-            product
-        );
-
-
-    const quantityKey =
-        getEditableQuantityKey(
-            product
-        );
-
-
-    const unitKey =
-        getEditableUnitKey(
-            product
-        );
-
-
-    const priceInput =
-        document.getElementById(
-            `editPrice_${key}`
-        );
-
-
-    const qtyInput =
-        document.getElementById(
-            `editQty_${key}`
-        );
-
-
-    const unitInput =
-        document.getElementById(
-            `editUnit_${key}`
-        );
-
-
-    const updates = {};
-
-
-    if(
-        priceKey &&
-        priceInput
-    ){
-
-        const price =
-            Number(
-                priceInput.value
-            );
-
-
-        if(
-            !Number.isFinite(price)
-            ||
-            price < 0
-        ){
-
-            toast(
-                "Enter a valid price",
-                true
-            );
-
-            return;
-        }
-
-
-        updates[priceKey] =
-            price;
-
-    }
-
-
-    if(
-        quantityKey &&
-        qtyInput
-    ){
-
-        const raw =
-            qtyInput.value.trim();
-
-
-        if(
-            raw === ""
-        ){
-
-            toast(
-                "Enter quantity",
-                true
-            );
-
-            return;
-        }
-
-
-        const oldValue =
-            product[quantityKey];
-
-
-        if(
-            typeof oldValue === "number"
-        ){
-
-            const number =
-                Number(raw);
-
-
-            if(
-                !Number.isFinite(number)
-            ){
-
-                toast(
-                    "Enter valid quantity",
-                    true
-                );
-
-                return;
-            }
-
-
-            updates[quantityKey] =
-                number;
-
-        }
-        else{
-
-            updates[quantityKey] =
-                raw;
-
-        }
-
-    }
-
-
-    if(
-        unitKey &&
-        unitInput
-    ){
-
-        updates[unitKey] =
-            unitInput.value.trim();
-
-    }
-
-
-    if(
-        !Object.keys(updates).length
-    ){
-
-        toast(
-            "No editable price, quantity or unit column found",
-            true
-        );
-
-        return;
-    }
-
-
-    const oldHtml =
-        button.innerHTML;
-
-
-    button.disabled =
-        true;
-
-
-    button.innerHTML =
-        '<i class="fa-solid fa-spinner fa-spin"></i>';
-
-
-    try{
-
-
-        const {
-            data,
-            error
-        } =
-        await sb
-        .from(table)
-        .update(updates)
-        .eq(
-            "id",
-            id
-        )
-        .eq(
-            "vendor_id",
-            currentVendor.id
-        )
-        .select("*")
-        .maybeSingle();
-
-
-        if(error){
-            throw error;
-        }
-
-
-        if(data){
-
-            Object.assign(
-                product,
-                data
-            );
-
-        }
-        else{
-
-            Object.assign(
-                product,
-                updates
-            );
-
-        }
-
-
-        const freshPriceKey =
-            getEditablePriceKey(
-                product
-            );
-
-
-        const freshPrice =
-            Number(
-                freshPriceKey
-                ? product[freshPriceKey]
-                : 0
-            );
-
-
-        const freshQty =
-            getProductQuantityValue(
-                product
-            );
-
-
-        const freshUnit =
-            getProductUnitValue(
-                product
-            );
-
-
-        const priceText =
-            document.getElementById(
-                `priceText_${key}`
-            );
-
-
-        const qtyText =
-            document.getElementById(
-                `qtyText_${key}`
-            );
-
-
-        const unitText =
-            document.getElementById(
-                `unitText_${key}`
-            );
-
-
-        if(priceText){
-
-            priceText.textContent =
-                `₹${Number.isFinite(freshPrice)
-                    ? freshPrice.toFixed(2)
-                    : "0.00"}`;
-
-        }
-
-
-        if(qtyText){
-
-            qtyText.textContent =
-                freshQty === null ||
-                freshQty === undefined ||
-                String(freshQty).trim() === ""
-                ? "—"
-                : String(freshQty);
-
-        }
-
-
-        if(unitText){
-
-            unitText.textContent =
-                freshUnit === null ||
-                freshUnit === undefined ||
-                String(freshUnit).trim() === ""
-                ? "—"
-                : String(freshUnit);
-
-        }
-
-
-        button.innerHTML =
-            '<i class="fa-solid fa-check"></i>';
-
-
-        button.classList.add(
-            "saved"
-        );
-
-
-        toast(
-            "Saved"
-        );
-
-
-        setTimeout(
-            () => {
-
-                button.classList.remove(
-                    "saved"
-                );
-
-
-                const form =
-                    document.getElementById(
-                        `editForm_${key}`
-                    );
-
-
-                if(form){
-
-                    form.classList.remove(
-                        "show"
-                    );
-
-                }
-
-            },
-            650
-        );
-
-
-    }
-    catch(error){
-
-
-        console.error(
-            "Product edit error:",
-            error
-        );
-
-
-        button.innerHTML =
-            oldHtml;
-
-
-        toast(
-            error.message ||
-            "Could not save product",
-            true
-        );
-
-
-    }
-    finally{
-
-
-        button.disabled =
-            false;
-
-    }
-
-};
-
-
-
-window.changeStock =
-async function(
-    table,
-    id,
-    checkbox
-){
-
-    const value =
-        checkbox.checked;
-
-
-    checkbox.disabled =
-        true;
-
-
-    try{
-
-
-        const {
-            error
-        } =
-        await sb
-        .from(table)
-        .update({
-
-            stock:value
-
-        })
-        .eq(
-            "id",
-            id
-        )
-        .eq(
-            "vendor_id",
-            currentVendor.id
-        );
-
-
-        if(error){
-            throw error;
-        }
-
-
-        const product =
-            vendorProducts.find(
-                item =>
-
-                    item.product_table ===
-                    table
-
-                    &&
-
-                    String(item.id) ===
-                    String(id)
-            );
-
-
-        if(product){
-            product.stock = value;
-        }
-
-
-        renderProducts();
-
-
-        toast(
-            value
-            ? "Product available"
-            : "Product unavailable"
-        );
-
-
-    }catch(error){
-
-
-        checkbox.checked =
-            !value;
-
-
-        toast(
-            "Stock update failed",
-            true
-        );
-
-
-    }finally{
-
-
-        checkbox.disabled =
-            false;
-
-
-    }
-
-};
-
-
-/* ===========================
-   NAVIGATION
-=========================== */
-
-document
-.querySelectorAll(
-    ".nav-btn"
-)
-.forEach(
-    button => {
-
-        button.addEventListener(
-            "click",
-            () => {
-
-                openPage(
-                    button.dataset.page
-                );
-
-            }
-        );
-
-    }
-);
-
-
-function openPage(
-    pageId
-){
-
-    document
-    .querySelectorAll(
-        ".app-page"
-    )
-    .forEach(
-        page => {
-
-            page.classList.remove(
-                "active"
-            );
-
-        }
-    );
-
-
-    document
-    .querySelectorAll(
-        ".nav-btn"
-    )
-    .forEach(
-        button => {
-
-            button.classList.toggle(
-
-                "active",
-
-                button.dataset.page ===
-                pageId
-
-            );
-
-        }
-    );
-
-
-    document
-    .getElementById(
-        pageId
-    )
-    ?.classList.add(
-        "active"
-    );
-
-
-    document.getElementById(
-        "queueBar"
-    ).style.display =
-
-        pageId ===
-        "ordersPage"
-
-        ? "grid"
-
-        : "none";
-
-
-    window.scrollTo({
-        top:0,
-        behavior:"instant"
+    document.querySelectorAll(".tab").forEach(button=>{
+      button.addEventListener("click",()=>{
+        switchTab(button.dataset.tab);
+      });
     });
 
-}
+    document.querySelectorAll(".bottomBtn").forEach(button=>{
+      button.addEventListener("click",()=>{
+        switchTab(button.dataset.bottom);
+      });
+    });
 
-
-/* ===========================
-   LOGOUT
-=========================== */
-
-document
-.getElementById(
-    "logoutBtn"
-)
-.addEventListener(
-"click",
-() => {
-
-    stopRealtime();
-    stopProductRealtime();
-
-
-    localStorage.removeItem(
-        "cezoo_vendor_id"
-    );
-
-
-    /*
-    IMPORTANT:
-    DO NOT REMOVE markerKey() here.
-
-    Pending orders must survive logout/login
-    and refresh until Packed.
-    */
-
-
-    currentVendor = null;
-
-    vendorProducts = [];
-
-    vendorOrders = [];
-
-
-    showLoginScreen();
-
-
-    password.value =
-        "";
-
-});
-
-
-/* ===========================
-   RESTORE LOGIN
-=========================== */
-
-async function restoreLogin(){
-
-    const id =
-        localStorage.getItem(
-            "cezoo_vendor_id"
-        );
-
-
-    if(
-        !id
-    ){
-        showLoginScreen();
-        return;
-    }
-
-
-    try{
-
-
-        const {
-            data,
-            error
-        } =
-        await sb
-        .from(
-            "vendor_login"
-        )
-        .select("*")
-        .eq(
-            "id",
-            id
-        )
-        .maybeSingle();
-
-
-        if(error){
-            throw error;
-        }
-
-
-        if(
-            !data
-        ){
-
-            localStorage.removeItem(
-                "cezoo_vendor_id"
-            );
-
-            showLoginScreen();
-            return;
-
-        }
-
-
-        currentVendor =
-            data;
-
-
-        /*
-          Restore the latest Android FCM token
-          after a page refresh/reopen.
-        */
-
-        await saveVendorFcmToken();
-
-
-        await openVendorApp(
-            data
-        );
-
-
-    }catch(error){
-
-
-        console.error(
-            "Restore login:",
-            error
-        );
-
-
-        localStorage.removeItem(
-            "cezoo_vendor_id"
-        );
-
-        showLoginScreen();
-
-
-    }
-
-}
-
-
-restoreLogin();
-
-</script>
-
+    render();
+    loadCurrentSessionOrders();
+    startRealtime();
+  </script>
 </body>
 </html>
