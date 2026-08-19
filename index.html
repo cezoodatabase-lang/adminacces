@@ -874,10 +874,17 @@
     }
 
     function billRows(order){
+      /*
+        Always show the complete bill breakdown.
+        If a fee is missing or zero, it is still displayed as ₹0.
+      */
+
       const subtotal = number(
         order.subtotal ??
         order.items_total ??
-        order.cart_total
+        order.cart_total ??
+        order.item_total ??
+        order.products_total
       );
 
       const deliveryFee = number(
@@ -898,55 +905,108 @@
         order.coupon_discount
       );
 
+      const tip = number(
+        order.tip ??
+        order.delivery_tip ??
+        order.partner_tip
+      );
+
+      const tax = number(
+        order.tax ??
+        order.taxes ??
+        order.gst ??
+        order.tax_amount
+      );
+
       const total = number(
         order.total_amount ??
         order.total ??
         order.grand_total
       );
 
-      let rows = "";
+      const paymentStatus = String(
+        order.payment_status ??
+        (order._payment === "UPI" ? "Paid / Check payment" : "Cash on delivery")
+      );
 
-      if(subtotal > 0){
-        rows += `
-          <div class="billRow">
-            <span>Items total</span>
-            <strong>${money(subtotal)}</strong>
-          </div>
-        `;
-      }
-
-      if(deliveryFee > 0){
-        rows += `
-          <div class="billRow">
-            <span>Delivery charge</span>
-            <strong>${money(deliveryFee)}</strong>
-          </div>
-        `;
-      }
-
-      if(handlingFee > 0){
-        rows += `
-          <div class="billRow">
-            <span>Handling fee</span>
-            <strong>${money(handlingFee)}</strong>
-          </div>
-        `;
-      }
-
-      if(discount > 0){
-        rows += `
-          <div class="billRow">
-            <span>Discount</span>
-            <strong>- ${money(discount)}</strong>
-          </div>
-        `;
-      }
+      const instructions = String(
+        order.delivery_instructions ??
+        order.delivery_instruction ??
+        order.instructions ??
+        order.instruction ??
+        order.order_instructions ??
+        order.notes ??
+        order.note ??
+        ""
+      ).trim();
 
       return `
-        ${rows}
+        <div class="billRow">
+          <span>Items total</span>
+          <strong>${money(subtotal)}</strong>
+        </div>
+
+        <div class="billRow">
+          <span>Delivery fee</span>
+          <strong>${money(deliveryFee)}</strong>
+        </div>
+
+        <div class="billRow">
+          <span>Handling fee</span>
+          <strong>${money(handlingFee)}</strong>
+        </div>
+
+        <div class="billRow">
+          <span>Taxes / GST</span>
+          <strong>${money(tax)}</strong>
+        </div>
+
+        <div class="billRow">
+          <span>Delivery tip</span>
+          <strong>${money(tip)}</strong>
+        </div>
+
+        <div class="billRow">
+          <span>Discount</span>
+          <strong>${discount > 0 ? "- " : ""}${money(discount)}</strong>
+        </div>
+
+        <div class="billRow">
+          <span>Payment method</span>
+          <strong>${safe(order._payment || "—")}</strong>
+        </div>
+
+        <div class="billRow">
+          <span>Payment status</span>
+          <strong>${safe(paymentStatus)}</strong>
+        </div>
+
         <div class="billTotal">
           <span>Total Bill</span>
           <strong>${money(total)}</strong>
+        </div>
+
+        <div style="
+          margin-top:14px;
+          padding-top:13px;
+          border-top:1px dashed #dfe2e6;
+        ">
+          <div class="sectionLabel" style="margin-bottom:7px">
+            Delivery Instructions
+          </div>
+
+          <div style="
+            font-size:10px;
+            line-height:1.55;
+            color:${instructions ? "#444950" : "#92979f"};
+            font-weight:${instructions ? "650" : "500"};
+          ">
+            ${
+              instructions
+                ? safe(instructions)
+                : "No delivery instructions"
+            }
+          </div>
         </div>
       `;
     }
