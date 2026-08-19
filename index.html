@@ -585,7 +585,11 @@
 
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const PAGE_OPENED_AT = new Date().toISOString();
+    const TODAY_STARTED_AT = (() => {
+      const now = new Date();
+      now.setHours(0,0,0,0);
+      return now.toISOString();
+    })();
 
     const ORDER_TABLES = [
       {name:"cash_delivery_orders", payment:"Cash"},
@@ -1065,8 +1069,8 @@
             <p>
               ${
                 activeTab === "cancelled"
-                ? "Cancelled orders from now onward will appear here."
-                : "New orders placed from now onward will appear here automatically."
+                ? "Today's cancelled orders will appear here."
+                : "Today's active orders will appear here automatically."
               }
             </p>
           </div>
@@ -1231,14 +1235,14 @@
       }).join("");
     }
 
-    async function loadCurrentSessionOrders(){
+    async function loadTodayOrders(){
       try{
         const results = await Promise.all(
           ORDER_TABLES.map(config=>{
             return db
               .from(config.name)
               .select("*")
-              .gte("created_at",PAGE_OPENED_AT)
+              .gte("created_at",TODAY_STARTED_AT)
               .order("created_at",{ascending:false});
           })
         );
@@ -1283,11 +1287,13 @@
           row.created_at || 0
         ).getTime();
 
-        const pageOpened = new Date(
-          PAGE_OPENED_AT
+        const todayStarted = new Date(
+          TODAY_STARTED_AT
         ).getTime();
 
-        if(createdAt && createdAt < pageOpened){
+        // Ignore only orders older than today.
+        // Refreshing or reopening the page will still restore today's orders.
+        if(createdAt && createdAt < todayStarted){
           return;
         }
 
@@ -1422,7 +1428,7 @@
     });
 
     render();
-    loadCurrentSessionOrders();
+    loadTodayOrders();
     startRealtime();
   </script>
 </body>
