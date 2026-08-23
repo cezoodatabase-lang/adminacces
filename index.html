@@ -548,6 +548,11 @@
         border-right:1px solid var(--line);
       }
     }
+
+    .productRow .productPack + .productPack{
+      margin-top:3px;
+    }
+
   </style>
 </head>
 <body>
@@ -715,51 +720,482 @@
       return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
     }
 
+
+    /* =========================================================
+       ALL PRODUCT TABLE SUPPORT
+
+       The order item already contains the exact `product_table`.
+       Admin now loads that exact row with select("*") so every
+       table can use its own real column names.
+
+       Known CEZOO product tables handled:
+       - cezoogroceries
+       - fresh_products
+       - icecreams
+       - food_items
+       - restaurant_food_items
+       - cakes
+       - cezoocafe
+
+       Any future table saved in order.items.product_table also works
+       because the loader does not use one hard-coded SELECT anymore.
+    ========================================================= */
+
+    function normalizeProductTable(value){
+      return String(value || "")
+        .trim()
+        .toLowerCase();
+    }
+
+    function firstValue(object, keys, fallback=""){
+      if(!object) return fallback;
+
+      for(const key of keys){
+        if(
+          Object.prototype.hasOwnProperty.call(object,key) &&
+          object[key] !== null &&
+          object[key] !== undefined &&
+          String(object[key]).trim() !== ""
+        ){
+          return object[key];
+        }
+      }
+
+      return fallback;
+    }
+
+    function firstImageValue(value){
+      if(!value) return "";
+
+      if(Array.isArray(value)){
+        const first = value.find(v=>typeof v === "string" && v.trim());
+        return first ? first.trim() : "";
+      }
+
+      if(typeof value === "object"){
+        return String(
+          value.url ||
+          value.src ||
+          value.image ||
+          ""
+        ).trim();
+      }
+
+      const raw = String(value).trim();
+
+      if(raw.startsWith("[") || raw.startsWith("{")){
+        try{
+          return firstImageValue(JSON.parse(raw));
+        }catch(error){}
+      }
+
+      return raw;
+    }
+
+    function productImage(product){
+      const candidates = [
+        product?.image1,
+        product?.image,
+        product?.image_url,
+        product?.product_image,
+        product?.product_image_url,
+        product?.food_image,
+        product?.dish_image,
+        product?.photo,
+        product?.photo_url,
+        product?.thumbnail,
+        product?.thumbnail_url,
+        product?.picture,
+        product?.picture_url,
+        product?.main_image,
+        product?.cover_image,
+        product?.images,
+        product?.product_images,
+        product?.gallery,
+        product?.photos
+      ];
+
+      for(const value of candidates){
+        const image = firstImageValue(value);
+        if(image) return image;
+      }
+
+      return "";
+    }
+
+    function productName(product){
+      const table = normalizeProductTable(product?.product_table);
+
+      if(table === "icecreams"){
+        return String(
+          product?.name ||
+          `Product ${product?.id ?? ""}`
+        ).trim();
+      }
+
+      if(
+        table === "food_items" ||
+        table === "restaurant_food_items"
+      ){
+        return String(
+          product?.product_name ||
+          product?.item_name ||
+          product?.name ||
+          `Product ${product?.id ?? ""}`
+        ).trim();
+      }
+
+      if(table === "cakes"){
+        return String(
+          product?.cake_name ||
+          product?.name ||
+          product?.product_name ||
+          `Cake ${product?.id ?? ""}`
+        ).trim();
+      }
+
+      return String(
+        firstValue(
+          product,
+          [
+            "name",
+            "product_name",
+            "item_name",
+            "food_name",
+            "dish_name",
+            "restaurant_item_name",
+            "cake_name",
+            "title"
+          ],
+          `Product ${product?.id ?? ""}`
+        )
+      ).trim();
+    }
+
+    function productSecondaryText(product){
+      const table = normalizeProductTable(product?.product_table);
+
+      if(table === "icecreams"){
+        return String(product?.name_telugu || "").trim();
+      }
+
+      if(
+        table === "food_items" ||
+        table === "restaurant_food_items"
+      ){
+        const productNameValue = String(product?.product_name || "").trim();
+        const itemName = String(product?.item_name || "").trim();
+        const description = String(product?.short_description || "").trim();
+
+        return [itemName, description]
+          .filter(value=>{
+            if(!value) return false;
+            if(
+              productNameValue &&
+              value.toLowerCase() === productNameValue.toLowerCase()
+            ){
+              return false;
+            }
+            return true;
+          })
+          .join(" • ");
+      }
+
+      if(table === "cakes"){
+        const item = product?._orderItem || {};
+
+        const cakeName = String(
+          item.cake_name_text ??
+          item.cake_name ??
+          ""
+        ).trim();
+
+        return cakeName
+          ? `Cake Name: ${cakeName}`
+          : "";
+      }
+
+      return String(
+        firstValue(
+          product,
+          [
+            "name_telugu",
+            "telugu_name",
+            "short_description",
+            "description",
+            "sub_txt"
+          ],
+          ""
+        )
+      ).trim();
+    }
+
+    function parseCakePrices(value){
+      if(
+        value &&
+        typeof value === "object" &&
+        !Array.isArray(value)
+      ){
+        return value;
+      }
+
+      try{
+        const parsed = JSON.parse(value || "{}");
+        return (
+          parsed &&
+          typeof parsed === "object" &&
+          !Array.isArray(parsed)
+        )
+          ? parsed
+          : {};
+      }catch(error){
+        return {};
+      }
+    }
+
+    function cakeVariantPrice(product){
+      const item = product?._orderItem || {};
+      const type = String(item.cake_type || "").trim();
+      const weight = String(item.cake_weight || "").trim();
+
+      const prices = parseCakePrices(product?.prices);
+
+      if(
+        type &&
+        weight &&
+        prices?.[type] &&
+        prices[type]?.[weight] !== undefined
+      ){
+        const value = number(prices[type][weight]);
+        if(value > 0) return value;
+      }
+
+      const simple = number(product?.price);
+      if(simple > 0) return simple;
+
+      return 0;
+    }
+
+    function productUnitPrice(product){
+      const table = normalizeProductTable(product?.product_table);
+
+      if(table === "cakes"){
+        return cakeVariantPrice(product);
+      }
+
+      const values = [
+        product?.discount_price,
+        product?.selling_price,
+        product?.sale_price,
+        product?.offer_price,
+        product?.price,
+        product?.original_price,
+        product?.mrp
+      ];
+
+      for(const value of values){
+        const n = Number(value);
+        if(Number.isFinite(n)) return n;
+      }
+
+      return 0;
+    }
+
+    function productPackText(product){
+      const table = normalizeProductTable(product?.product_table);
+      const item = product?._orderItem || {};
+
+      if(table === "cakes"){
+        const parts = [
+          item.cake_type,
+          item.cake_weight
+        ].filter(Boolean);
+
+        if(parts.length){
+          return parts.join(" • ");
+        }
+
+        return String(product?.sub_txt || "Cake").trim();
+      }
+
+      if(table === "icecreams"){
+        return [
+          product?.quantity,
+          product?.unit
+        ]
+        .filter(v=>v !== null && v !== undefined && String(v).trim() !== "")
+        .join(" ");
+      }
+
+      if(
+        table === "food_items" ||
+        table === "restaurant_food_items"
+      ){
+        return String(
+          product?.short_description ||
+          product?.item_name ||
+          ""
+        ).trim();
+      }
+
+      if(
+        table === "cezoogroceries" ||
+        table === "fresh_products"
+      ){
+        const quantity = firstValue(
+          product,
+          [
+            "product_quantity",
+            "net_quantity",
+            "net_weight",
+            "weight",
+            "quantity_value",
+            "qty_value",
+            "pack_quantity",
+            "quantity",
+            "qty"
+          ],
+          ""
+        );
+
+        const unit = firstValue(
+          product,
+          [
+            "product_unit",
+            "weight_unit",
+            "measurement_unit",
+            "quantity_unit",
+            "pack_unit",
+            "unit",
+            "units",
+            "uom"
+          ],
+          ""
+        );
+
+        return [quantity,unit]
+          .filter(v=>v !== null && v !== undefined && String(v).trim() !== "")
+          .join(" ");
+      }
+
+      const quantity = firstValue(
+        product,
+        [
+          "quantity",
+          "product_quantity",
+          "food_quantity",
+          "icecream_quantity",
+          "net_quantity",
+          "net_weight",
+          "weight",
+          "pack_size",
+          "size",
+          "volume"
+        ],
+        ""
+      );
+
+      const unit = firstValue(
+        product,
+        [
+          "unit",
+          "product_unit",
+          "quantity_unit",
+          "weight_unit",
+          "measurement_unit",
+          "units",
+          "uom"
+        ],
+        ""
+      );
+
+      return [quantity,unit]
+        .filter(v=>v !== null && v !== undefined && String(v).trim() !== "")
+        .join(" ");
+    }
+
+
     async function fetchProducts(items){
       if(!Array.isArray(items) || !items.length) return [];
 
       const grouped = {};
 
       for(const item of items){
-        const table = String(
+        const table = normalizeProductTable(
           item.product_table ||
           item.table_name ||
           item.table ||
           ""
-        ).trim();
+        );
 
-        const id = Number(item.product_id ?? item.id);
+        const rawId =
+          item.product_id ??
+          item.productId ??
+          item.id;
+
+        const id = Number(rawId);
 
         const qty = number(
           item.qty ??
           item.quantity ??
           item.count ??
+          item.ordered_qty ??
           1
         ) || 1;
 
-        if(!table || !Number.isFinite(id)) continue;
+        if(
+          !table ||
+          !Number.isFinite(id)
+        ){
+          console.warn(
+            "Admin product skipped: missing product_table/product_id",
+            item
+          );
+          continue;
+        }
 
-        if(!grouped[table]) grouped[table] = [];
-        grouped[table].push({id,qty});
+        if(!grouped[table]){
+          grouped[table] = [];
+        }
+
+        grouped[table].push({
+          id,
+          qty,
+          item
+        });
       }
 
       const finalProducts = [];
 
       for(const [table, rows] of Object.entries(grouped)){
-        const ids = [...new Set(rows.map(x=>x.id))];
+        const ids = [
+          ...new Set(
+            rows.map(x=>x.id)
+          )
+        ];
 
         const missingIds = ids.filter(id=>{
           return !productCache[`${table}_${id}`];
         });
 
         if(missingIds.length){
+          /*
+            IMPORTANT:
+            Do NOT use one fixed select list here.
+            Every CEZOO product table has different columns.
+            select("*") lets admin load the exact real row.
+          */
           const {data,error} = await db
             .from(table)
-            .select("id,name,name_telugu,quantity,unit,original_price,discount_price,image1")
+            .select("*")
             .in("id",missingIds);
 
           if(error){
-            console.error("Product load error:",table,error);
+            console.error(
+              "Product load error:",
+              table,
+              error
+            );
           }else{
             for(const product of (data || [])){
               productCache[`${table}_${product.id}`] = {
@@ -771,18 +1207,30 @@
         }
 
         for(const row of rows){
-          const product = productCache[`${table}_${row.id}`];
+          const product =
+            productCache[
+              `${table}_${row.id}`
+            ];
 
           if(product){
             finalProducts.push({
               ...product,
-              ordered_qty:row.qty
-            });
-          }else{
-            finalProducts.push({
-              id:row.id,
               product_table:table,
               ordered_qty:row.qty,
+              _orderItem:row.item
+            });
+          }else{
+            /*
+              Even if a table/row cannot be loaded,
+              still show the data already saved inside order.items.
+            */
+            finalProducts.push({
+              ...row.item,
+              id:row.id,
+              product_id:row.id,
+              product_table:table,
+              ordered_qty:row.qty,
+              _orderItem:row.item,
               _missing:true
             });
           }
@@ -808,68 +1256,106 @@
       }
 
       return products.map(product=>{
-        const qty = number(product.ordered_qty) || 1;
+        const qty =
+          number(
+            product.ordered_qty
+          ) || 1;
 
-        if(product._missing){
-          return `
-            <div class="productRow">
-              <div class="productImage">
-                <i class="fa-solid fa-box"></i>
-              </div>
+        const name =
+          productName(product);
 
-              <div>
-                <div class="productName">
-                  Product ID ${safe(product.id)}
-                </div>
-                <div class="productPack">
-                  ${safe(product.product_table)}
-                </div>
-              </div>
+        const image =
+          productImage(product);
 
-              <div class="productMeta">
-                <div class="qty">×${qty}</div>
-              </div>
-            </div>
-          `;
+        const secondary =
+          productSecondaryText(product);
+
+        const packText =
+          productPackText(product);
+
+        /*
+          If the live product row could not be loaded, use the
+          price captured inside order.items before showing ₹0.
+        */
+        let eachPrice =
+          productUnitPrice(product);
+
+        if(!eachPrice){
+          eachPrice = number(
+            product?._orderItem?.unit_price ??
+            product?._orderItem?.discount_price ??
+            product?._orderItem?.price ??
+            product?.unit_price ??
+            product?.discount_price ??
+            product?.price
+          );
         }
 
-        const eachPrice = number(
-          product.discount_price ||
-          product.original_price
+        let totalLine = number(
+          product?._orderItem?.total_price ??
+          product?.total_price
         );
 
-        const totalLine = eachPrice * qty;
-
-        const packText = [
-          product.quantity,
-          product.unit
-        ].filter(Boolean).join(" ");
+        if(!totalLine){
+          totalLine =
+            eachPrice *
+            qty;
+        }
 
         return `
           <div class="productRow">
 
             <div class="productImage">
               ${
-                product.image1
-                ? `<img src="${safe(product.image1)}" alt="${safe(product.name || "Product")}" loading="lazy">`
-                : `<i class="fa-solid fa-box"></i>`
+                image
+                ? `
+                    <img
+                      src="${safe(image)}"
+                      alt="${safe(name || "Product")}"
+                      loading="lazy"
+                    >
+                  `
+                : `
+                    <i class="fa-solid fa-box"></i>
+                  `
               }
             </div>
 
             <div>
               <div class="productName">
-                ${safe(product.name || `Product ${product.id}`)}
+                ${safe(
+                  name ||
+                  `Product ${product.id}`
+                )}
               </div>
 
+              ${
+                secondary
+                ? `
+                    <div class="productPack" style="color:#5f646d">
+                      ${safe(secondary)}
+                    </div>
+                  `
+                : ""
+              }
+
               <div class="productPack">
-                ${safe(packText || "Unit")}
+                ${safe(
+                  packText ||
+                  product.product_table ||
+                  "Unit"
+                )}
               </div>
             </div>
 
             <div class="productMeta">
               <div class="qty">×${qty}</div>
-              <div class="linePrice">${money(totalLine)}</div>
-              <div class="singlePrice">${money(eachPrice)} each</div>
+              <div class="linePrice">
+                ${money(totalLine)}
+              </div>
+              <div class="singlePrice">
+                ${money(eachPrice)} each
+              </div>
             </div>
 
           </div>
