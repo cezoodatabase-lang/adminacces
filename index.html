@@ -1363,42 +1363,103 @@
       }).join("");
     }
 
+    function calculateLowCartFee(subtotal){
+
+      const total = number(subtotal);
+
+      if(total <= 0){
+        return 0;
+      }
+
+      if(total <= 30){
+        return 40;
+      }
+
+      if(total <= 60){
+        return 30;
+      }
+
+      if(total <= 90){
+        return 25;
+      }
+
+      if(total <= 120){
+        return 20;
+      }
+
+      if(total <= 150){
+        return 15;
+      }
+
+      if(total < 180){
+        return 10;
+      }
+
+      return 0;
+    }
+
+
     function billRows(order){
       /*
-        Always show the complete bill breakdown.
-        If a fee is missing or zero, it is still displayed as ₹0.
+        Always show the complete live bill breakdown.
+
+        - Delivery / handling / tip / tax / discount are read from
+          the latest Supabase order row.
+        - Low Cart uses the saved low_cart_fee when available.
+        - If low_cart_fee is not saved yet, it is calculated from
+          the current item subtotal using CEZOO's Low Cart slabs.
+        - Low Cart is completely hidden once subtotal reaches ₹180+.
       */
 
       const subtotal = number(
+        order.item_total ??
         order.subtotal ??
         order.items_total ??
         order.cart_total ??
-        order.item_total ??
         order.products_total
       );
 
       const deliveryFee = number(
-        order.delivery_charge ??
         order.delivery_fee ??
-        order.delivery_charges
+        order.delivery_charge ??
+        order.delivery_charges ??
+        order.delivery_pay
       );
 
       const handlingFee = number(
         order.handling_fee ??
         order.handling_charges ??
+        order.handling_pay ??
         order.platform_fee
       );
+
+      const savedLowCartFee = number(
+        order.low_cart_fee ??
+        order.low_cart_charge ??
+        order.low_cart
+      );
+
+      const lowCartFee =
+        subtotal >= 180
+          ? 0
+          : (
+              savedLowCartFee > 0
+                ? savedLowCartFee
+                : calculateLowCartFee(subtotal)
+            );
 
       const discount = number(
         order.discount ??
         order.discount_amount ??
-        order.coupon_discount
+        order.coupon_discount ??
+        order.coupon_discount_amount
       );
 
       const tip = number(
-        order.tip ??
         order.delivery_tip ??
-        order.partner_tip
+        order.tip ??
+        order.partner_tip ??
+        order.delivery_partner_tip
       );
 
       const tax = number(
@@ -1445,6 +1506,17 @@
           <span>Handling fee</span>
           <strong>${money(handlingFee)}</strong>
         </div>
+
+        ${
+          lowCartFee > 0
+            ? `
+              <div class="billRow">
+                <span>Low Cart</span>
+                <strong>${money(lowCartFee)}</strong>
+              </div>
+            `
+            : ""
+        }
 
         <div class="billRow">
           <span>Taxes / GST</span>
@@ -1766,7 +1838,11 @@
 
     async function handleRealtime(config,payload){
       try{
-        const row = payload.new;
+        const row =
+          payload.new && Object.keys(payload.new).length
+            ? payload.new
+            : payload.old;
+
         if(!row) return;
 
         const createdAt = new Date(
