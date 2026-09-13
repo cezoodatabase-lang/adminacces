@@ -554,41 +554,50 @@
     }
 
 
-    /* DELIVERY PARTNER ASSIGNMENT */
-    .partnerSection{
+    /* APPROVED DELIVERY PARTNER DISPATCH */
+    .dispatchSection{
       padding:14px 18px 17px;
       border-bottom:1px solid var(--line);
       background:#fff;
     }
 
-    .partnerHeader{
+    .dispatchHead{
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
       gap:10px;
       margin-bottom:9px;
     }
 
-    .partnerCurrent{
-      font-size:9px;
-      color:#6f747d;
-      line-height:1.45;
-      text-align:right;
-    }
-
-    .partnerCurrent strong{
-      color:#202329;
+    .dispatchTitle{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:11px;
       font-weight:800;
+      color:#22262c;
     }
 
-    .partnerAssignRow{
+    .dispatchTitle i{color:var(--green-dark)}
+
+    .dispatchState{
+      font-size:8px;
+      font-weight:800;
+      color:#7d838c;
+      text-align:right;
+      line-height:1.45;
+    }
+
+    .dispatchState.assigned{color:var(--green-dark)}
+
+    .dispatchGrid{
       display:grid;
       grid-template-columns:minmax(0,1fr) auto;
-      gap:9px;
+      gap:8px;
       align-items:center;
     }
 
-    .partnerSelect{
+    .dispatchSelect{
       width:100%;
       height:42px;
       border:1px solid var(--line);
@@ -601,21 +610,51 @@
       font-weight:700;
     }
 
-    .assignPartnerBtn{
+    .dispatchBtn{
       height:42px;
-      padding:0 15px;
+      min-width:108px;
+      padding:0 14px;
       border:0;
       border-radius:11px;
-      background:var(--blue);
+      background:var(--dark);
       color:#fff;
       font-size:10px;
       font-weight:800;
       white-space:nowrap;
     }
 
-    .assignPartnerBtn:disabled{
-      opacity:.55;
+    .dispatchBtn.reassign{
+      background:#eef1f4;
+      color:#222;
+    }
+
+    .dispatchBtn:disabled{
+      opacity:.45;
       cursor:not-allowed;
+    }
+
+    .cancelPartnerBtn{
+      width:100%;
+      height:38px;
+      margin-top:8px;
+      border:1px solid #f1cccc;
+      border-radius:10px;
+      background:#fff;
+      color:var(--red);
+      font-size:9px;
+      font-weight:800;
+    }
+
+    .cancelPartnerBtn:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+    }
+
+    .dispatchHint{
+      margin-top:7px;
+      color:#92979f;
+      font-size:8px;
+      line-height:1.45;
     }
 
     .productIdText{
@@ -623,16 +662,11 @@
       color:#9aa0a8;
       font-size:8px;
       font-weight:700;
-      word-break:break-all;
     }
 
     @media(max-width:520px){
-      .partnerAssignRow{
-        grid-template-columns:1fr;
-      }
-      .assignPartnerBtn{
-        width:100%;
-      }
+      .dispatchGrid{grid-template-columns:1fr}
+      .dispatchBtn{width:100%}
     }
 
   </style>
@@ -683,7 +717,6 @@
       {name:"upi_orders", payment:"UPI"}
     ];
 
-    /* Existing delivery tables only — no new SQL/table required */
     const DELIVERY_TABLES = {
       cash_delivery_orders:"delivery_cash_orders",
       upi_orders:"delivery_upi_orders"
@@ -691,8 +724,8 @@
 
     let activeTab = "new";
     let orders = [];
-    let deliveryPartners = [];
     let deliveryRows = [];
+    let approvedPartners = [];
     const productCache = {};
 
     const ordersList = document.getElementById("ordersList");
@@ -775,6 +808,12 @@
       return `${order._table}:${order.id ?? order.order_id}`;
     }
 
+    function cleanMobile(value){
+      return String(value ?? "")
+        .replace(/\D/g,"")
+        .slice(-10);
+    }
+
     function deliveryTableForOrder(order){
       return DELIVERY_TABLES[order?._table] || "";
     }
@@ -784,33 +823,26 @@
     }
 
     function deliveryRowForOrder(order){
-      if(!order) return null;
-
-      const targetOrderId = orderNumber(order);
-      const targetDeliveryTable = deliveryTableForOrder(order);
+      const targetId = orderNumber(order);
+      const targetTable = deliveryTableForOrder(order);
 
       return deliveryRows.find(row=>{
-        const rowOrderId = String(
-          row.order_id ??
-          row.source_order_id ??
-          ""
-        );
-
         return (
-          rowOrderId === targetOrderId &&
-          row._delivery_table === targetDeliveryTable
+          String(row.order_id ?? row.source_order_id ?? "") === targetId &&
+          row._delivery_table === targetTable
         );
       }) || null;
     }
 
-    function assignedPartner(order){
+    function currentAssignedPartner(order){
       const row = deliveryRowForOrder(order);
 
       if(!row){
         return {
+          assigned:false,
+          id:"",
           name:"",
           mobile:"",
-          accepted:false,
           status:""
         };
       }
@@ -819,128 +851,171 @@
         row.delivery_boy_name ??
         row.delivery_partner_name ??
         row.partner_name ??
-        row.rider_name ??
         ""
       ).trim();
 
-      const mobile = String(
+      const mobile = cleanMobile(
         row.delivery_boy_mobile ??
         row.delivery_partner_mobile ??
         row.partner_mobile ??
-        row.rider_mobile ??
+        ""
+      );
+
+      const id = String(
+        row.delivery_boy_id ??
+        row.delivery_partner_id ??
         ""
       ).trim();
 
+      const status = String(
+        row.delivery_status || "assigned"
+      ).trim().toLowerCase();
+
       return {
+        assigned:Boolean(
+          name ||
+          mobile ||
+          row.delivery_boy_accepted === true
+        ),
+        id,
         name,
         mobile,
-        accepted:
-          row.delivery_boy_accepted === true ||
-          !!name ||
-          !!mobile,
-        status:String(row.delivery_status || "").trim()
+        status
       };
     }
 
-    function partnerKey(partner){
-      return String(partner.mobile || "").replace(/\D/g,"") ||
-        String(partner.name || "").trim().toLowerCase();
+    function activeOrdersForPartner(mobileNumber){
+      const m = cleanMobile(mobileNumber);
+
+      return deliveryRows.filter(row=>{
+        const rowMobile = cleanMobile(
+          row.delivery_boy_mobile ??
+          row.delivery_partner_mobile ??
+          ""
+        );
+
+        const status = String(
+          row.delivery_status || ""
+        ).trim().toLowerCase();
+
+        return (
+          rowMobile === m &&
+          row.delivery_boy_accepted === true &&
+          !["delivered","cancelled","canceled"].includes(status)
+        );
+      }).length;
     }
 
-    async function loadDeliveryPartners(){
+    function dispatchOptionLabel(partner){
+      const active = activeOrdersForPartner(partner.mobile);
+
+      return `${partner.name} · +91 ${partner.mobile} · ${
+        active ? `${active} active` : "Available"
+      }`;
+    }
+
+    function partnerOptions(order){
+      const current = currentAssignedPartner(order);
+      const currentMobile = cleanMobile(current.mobile);
+
+      return `
+        <option value="">Choose a delivery partner</option>
+        ${approvedPartners.map(partner=>`
+          <option
+            value="${safe(partner.mobile)}"
+            ${currentMobile && currentMobile === partner.mobile ? "selected" : ""}
+          >
+            ${safe(dispatchOptionLabel(partner))}
+          </option>
+        `).join("")}
+      `;
+    }
+
+    async function loadDeliveryDispatchData(){
       try{
-        const [cashResult,upiResult] = await Promise.all([
-          db.from("delivery_cash_orders").select("*"),
-          db.from("delivery_upi_orders").select("*")
+        const [applications,cash,upi] = await Promise.all([
+          db
+            .from("delivery_partner_applications")
+            .select("*")
+            .eq("status","approved"),
+
+          db
+            .from("delivery_cash_orders")
+            .select("*"),
+
+          db
+            .from("delivery_upi_orders")
+            .select("*")
         ]);
 
-        if(cashResult.error){
-          console.error("delivery_cash_orders load:",cashResult.error);
+        if(applications.error){
+          console.error(
+            "delivery_partner_applications:",
+            applications.error
+          );
         }
 
-        if(upiResult.error){
-          console.error("delivery_upi_orders load:",upiResult.error);
+        if(cash.error){
+          console.error("delivery_cash_orders:",cash.error);
+        }
+
+        if(upi.error){
+          console.error("delivery_upi_orders:",upi.error);
         }
 
         deliveryRows = [
-          ...(cashResult.data || []).map(row=>({
+          ...(cash.data || []).map(row=>({
             ...row,
             _delivery_table:"delivery_cash_orders"
           })),
-          ...(upiResult.data || []).map(row=>({
+          ...(upi.data || []).map(row=>({
             ...row,
             _delivery_table:"delivery_upi_orders"
           }))
         ];
 
-        const map = new Map();
+        approvedPartners = (applications.data || [])
+          .map(application=>{
+            const mobile = cleanMobile(application.mobile);
 
-        deliveryRows.forEach(row=>{
-          const name = String(
-            row.delivery_boy_name ??
-            row.delivery_partner_name ??
-            row.partner_name ??
-            row.rider_name ??
-            ""
-          ).trim();
+            const name = String(
+              application.full_name ??
+              application.name ??
+              application.delivery_boy_name ??
+              "Delivery Partner"
+            ).trim();
 
-          const mobile = String(
-            row.delivery_boy_mobile ??
-            row.delivery_partner_mobile ??
-            row.partner_mobile ??
-            row.rider_mobile ??
-            ""
-          ).trim();
+            const partnerId = String(
+              application.delivery_boy_uuid ??
+              application.delivery_boy_id ??
+              application.id ??
+              mobile
+            );
 
-          if(!name && !mobile) return;
+            return {
+              application,
+              mobile,
+              name,
+              partnerId
+            };
+          })
+          .filter(partner=>partner.mobile)
+          .sort((a,b)=>{
+            const activeDiff =
+              activeOrdersForPartner(a.mobile) -
+              activeOrdersForPartner(b.mobile);
 
-          const partner = {name,mobile};
-          const key = partnerKey(partner);
+            if(activeDiff !== 0) return activeDiff;
 
-          if(key && !map.has(key)){
-            map.set(key,partner);
-          }
-        });
-
-        deliveryPartners = [...map.values()].sort((a,b)=>{
-          return String(a.name || a.mobile)
-            .localeCompare(String(b.name || b.mobile));
-        });
+            return a.name.localeCompare(b.name);
+          });
 
       }catch(error){
-        console.error("Delivery partner load error:",error);
+        console.error(
+          "Delivery dispatch data load error:",
+          error
+        );
       }
-    }
-
-    function partnerOptions(order){
-      const current = assignedPartner(order);
-      const selectedKey = partnerKey(current);
-
-      const items = deliveryPartners.map(partner=>{
-        const key = partnerKey(partner);
-        const label = [
-          partner.name || "Delivery Partner",
-          partner.mobile
-        ].filter(Boolean).join(" • ");
-
-        return `
-          <option
-            value="${safe(key)}"
-            ${selectedKey && selectedKey === key ? "selected" : ""}
-          >
-            ${safe(label)}
-          </option>
-        `;
-      }).join("");
-
-      return `
-        <option value="">
-          ${deliveryPartners.length
-            ? "Select delivery partner"
-            : "No saved delivery partners found"}
-        </option>
-        ${items}
-      `;
     }
 
     function addOrUpdateOrder(order){
@@ -1634,7 +1709,7 @@
     function billRows(order){
       /*
         Always show the complete live bill breakdown.
-        Low Cart Fee is intentionally not shown in this admin screen.
+        Low Cart Fee is intentionally hidden in this admin screen.
       */
 
       const subtotal = number(
@@ -1931,51 +2006,77 @@
               ${billRows(order)}
             </section>
 
-            <section class="partnerSection">
-              <div class="partnerHeader">
-                <div class="sectionLabel" style="margin:0">
-                  Delivery Partner
+            <section class="dispatchSection">
+              <div class="dispatchHead">
+                <div class="dispatchTitle">
+                  <i class="fa-solid fa-motorcycle"></i>
+                  <span>Delivery Partner</span>
                 </div>
 
-                <div class="partnerCurrent">
+                <div class="dispatchState ${
+                  currentAssignedPartner(order).assigned
+                    ? "assigned"
+                    : ""
+                }">
                   ${
-                    assignedPartner(order).name || assignedPartner(order).mobile
-                      ? `
-                          Assigned:
-                          <strong>
-                            ${safe(
-                              [
-                                assignedPartner(order).name,
-                                assignedPartner(order).mobile
-                              ].filter(Boolean).join(" • ")
-                            )}
-                          </strong>
-                        `
+                    currentAssignedPartner(order).assigned
+                      ? `Assigned to ${safe(
+                          currentAssignedPartner(order).name ||
+                          currentAssignedPartner(order).mobile
+                        )}`
                       : "Not assigned"
                   }
                 </div>
               </div>
 
-              <div class="partnerAssignRow">
+              <div class="dispatchGrid">
                 <select
-                  id="partner-${originalIndex}"
-                  class="partnerSelect"
+                  id="dispatch-${originalIndex}"
+                  class="dispatchSelect"
+                  ${approvedPartners.length ? "" : "disabled"}
                 >
-                  ${partnerOptions(order)}
+                  ${
+                    approvedPartners.length
+                      ? partnerOptions(order)
+                      : '<option value="">No approved delivery partners</option>'
+                  }
                 </select>
 
                 <button
-                  class="assignPartnerBtn"
+                  class="dispatchBtn ${
+                    currentAssignedPartner(order).assigned
+                      ? "reassign"
+                      : ""
+                  }"
                   type="button"
-                  onclick="assignDeliveryPartner(${originalIndex},this)"
-                  ${deliveryPartners.length ? "" : "disabled"}
+                  onclick="dispatchOrderToPartner(${originalIndex},this)"
+                  ${approvedPartners.length ? "" : "disabled"}
                 >
                   ${
-                    assignedPartner(order).name || assignedPartner(order).mobile
-                      ? "Reassign"
-                      : "Assign"
+                    currentAssignedPartner(order).assigned
+                      ? '<i class="fa-solid fa-arrow-right-arrow-left"></i> Reassign'
+                      : '<i class="fa-solid fa-paper-plane"></i> Send'
                   }
                 </button>
+              </div>
+
+              ${
+                currentAssignedPartner(order).assigned
+                  ? `
+                      <button
+                        class="cancelPartnerBtn"
+                        type="button"
+                        onclick="cancelDeliveryPartner(${originalIndex},this)"
+                      >
+                        <i class="fa-solid fa-xmark"></i>
+                        Cancel Delivery Partner
+                      </button>
+                    `
+                  : ""
+              }
+
+              <div class="dispatchHint">
+                Only approved delivery partners are listed here.
               </div>
             </section>
 
@@ -2154,116 +2255,366 @@
       });
     }
 
-    window.assignDeliveryPartner = async function(index,button){
+    window.dispatchOrderToPartner = async function(index,button){
       const order = orders[index];
-      if(!order || !button) return;
 
-      const select = document.getElementById(`partner-${index}`);
-      if(!select || !select.value){
-        showToast("Select delivery partner",true);
+      if(!order || !button){
         return;
       }
 
-      const partner = deliveryPartners.find(item=>{
-        return partnerKey(item) === select.value;
-      });
+      const select =
+        document.getElementById(`dispatch-${index}`);
+
+      const selectedMobile =
+        cleanMobile(select?.value || "");
+
+      if(!selectedMobile){
+        showToast(
+          "Select a delivery partner first",
+          true
+        );
+        return;
+      }
+
+      const partner =
+        approvedPartners.find(item=>{
+          return item.mobile === selectedMobile;
+        });
 
       if(!partner){
-        showToast("Delivery partner not found",true);
+        showToast(
+          "Selected partner is not approved",
+          true
+        );
         return;
       }
 
-      const deliveryTable = deliveryTableForOrder(order);
+      const deliveryTable =
+        deliveryTableForOrder(order);
 
       if(!deliveryTable){
-        showToast("Delivery table not configured",true);
+        showToast(
+          "Delivery table not configured",
+          true
+        );
         return;
       }
 
-      const oldButton = button.innerHTML;
+      const oldHtml = button.innerHTML;
+
       button.disabled = true;
       button.innerHTML =
-        '<i class="fa-solid fa-spinner fa-spin"></i>';
+        '<i class="fa-solid fa-spinner fa-spin"></i> Sending';
 
       try{
         /*
-          Use the existing delivery tables and existing delivery_boy_* fields.
-          No new SQL/table is created here.
+          1) Ensure delivery row exists.
+          2) Assign approved partner directly.
+          3) Sync same partner to original customer order.
         */
-        const payload = {...order};
 
-        delete payload._table;
-        delete payload._payment;
-        delete payload._products;
+        let deliveryRow =
+          deliveryRowForOrder(order);
 
-        payload.source_order_id = orderNumber(order);
-        payload.source_order_type =
-          order._table === "upi_orders" ? "upi" : "cash";
+        if(!deliveryRow){
+          const payload = {...order};
 
-        payload.sent_to_delivery_at =
-          payload.sent_to_delivery_at || new Date().toISOString();
+          delete payload._table;
+          delete payload._payment;
+          delete payload._products;
 
-        payload.delivery_status = "assigned";
-        payload.delivery_boy_name = partner.name || "";
-        payload.delivery_boy_mobile = partner.mobile || "";
-        payload.delivery_boy_accepted = false;
+          payload.source_order_id =
+            orderNumber(order);
 
-        const {data,error} = await db
-          .from(deliveryTable)
-          .upsert(
-            payload,
-            {onConflict:"order_id"}
-          )
-          .select()
-          .maybeSingle();
+          payload.source_order_type =
+            order._table === "upi_orders"
+              ? "upi"
+              : "cash";
 
-        if(error) throw error;
+          payload.sent_to_delivery_at =
+            new Date().toISOString();
 
-        const row = {
-          ...(data || payload),
-          order_id:
-            data?.order_id ??
-            payload.order_id ??
-            orderNumber(order),
+          payload.delivery_status =
+            "assigned";
+
+          payload.delivery_boy_accepted =
+            false;
+
+          const createResult =
+            await db
+              .from(deliveryTable)
+              .upsert(
+                payload,
+                {onConflict:"order_id"}
+              )
+              .select("*")
+              .maybeSingle();
+
+          if(createResult.error){
+            throw createResult.error;
+          }
+
+          deliveryRow = {
+            ...(createResult.data || payload),
+            _delivery_table:deliveryTable
+          };
+
+          deliveryRows.unshift(deliveryRow);
+        }
+
+        const deliveryUpdate = {
+          delivery_boy_accepted:true,
+          delivery_boy_id:String(partner.partnerId),
+          delivery_boy_name:String(partner.name),
+          delivery_boy_mobile:String(partner.mobile),
+          delivery_status:"accepted"
+        };
+
+        const deliveryResult =
+          await db
+            .from(deliveryTable)
+            .update(deliveryUpdate)
+            .eq(
+              "order_id",
+              orderNumber(order)
+            )
+            .select("*")
+            .maybeSingle();
+
+        if(deliveryResult.error){
+          throw deliveryResult.error;
+        }
+
+        if(!deliveryResult.data){
+          throw new Error(
+            "Delivery order was not found"
+          );
+        }
+
+        const customerUpdate = {
+          delivery_boy_accepted:true,
+          delivery_boy_id:String(partner.partnerId),
+          delivery_boy_name:String(partner.name),
+          delivery_boy_mobile:String(partner.mobile),
+          order_status:"delivery_boy_assigned"
+        };
+
+        const customerResult =
+          await db
+            .from(order._table)
+            .update(customerUpdate)
+            .eq(
+              "order_id",
+              orderNumber(order)
+            )
+            .select("*")
+            .maybeSingle();
+
+        if(customerResult.error){
+          throw new Error(
+            "Delivery assigned, but customer order sync failed: " +
+            customerResult.error.message
+          );
+        }
+
+        const deliveryIndex =
+          deliveryRows.findIndex(row=>{
+            return (
+              String(
+                row.order_id ??
+                row.source_order_id ??
+                ""
+              ) === orderNumber(order) &&
+              row._delivery_table === deliveryTable
+            );
+          });
+
+        const updatedDelivery = {
+          ...deliveryResult.data,
           _delivery_table:deliveryTable
         };
 
-        const existingIndex = deliveryRows.findIndex(item=>{
-          return (
-            String(
-              item.order_id ??
-              item.source_order_id ??
-              ""
-            ) === orderNumber(order) &&
-            item._delivery_table === deliveryTable
-          );
-        });
-
-        if(existingIndex >= 0){
-          deliveryRows[existingIndex] = {
-            ...deliveryRows[existingIndex],
-            ...row
-          };
+        if(deliveryIndex >= 0){
+          deliveryRows[deliveryIndex] =
+            updatedDelivery;
         }else{
-          deliveryRows.unshift(row);
+          deliveryRows.unshift(
+            updatedDelivery
+          );
         }
 
+        Object.assign(
+          order,
+          customerResult.data ||
+          customerUpdate
+        );
+
         showToast(
-          `Assigned to ${partner.name || partner.mobile}`
+          `Order sent to ${partner.name}`
         );
 
         render();
 
       }catch(error){
-        console.error("Partner assignment error:",error);
-
-        showToast(
-          error.message || "Partner assignment failed",
-          true
+        console.error(
+          "Dispatch delivery error:",
+          error
         );
 
         button.disabled = false;
-        button.innerHTML = oldButton;
+        button.innerHTML = oldHtml;
+
+        showToast(
+          error.message ||
+          "Unable to assign delivery partner",
+          true
+        );
+      }
+    };
+
+
+    window.cancelDeliveryPartner = async function(index,button){
+      const order = orders[index];
+
+      if(!order || !button){
+        return;
+      }
+
+      const deliveryTable =
+        deliveryTableForOrder(order);
+
+      const deliveryRow =
+        deliveryRowForOrder(order);
+
+      if(!deliveryTable || !deliveryRow){
+        showToast(
+          "No delivery partner assigned",
+          true
+        );
+        return;
+      }
+
+      const status = String(
+        deliveryRow.delivery_status || ""
+      ).trim().toLowerCase();
+
+      if(
+        ["delivered","cancelled","canceled"]
+          .includes(status)
+      ){
+        showToast(
+          "Completed delivery cannot be unassigned",
+          true
+        );
+        return;
+      }
+
+      const oldHtml = button.innerHTML;
+
+      button.disabled = true;
+      button.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> Cancelling';
+
+      try{
+        /*
+          Cancel only the assigned partner.
+          Keep the delivery row available for another rider.
+        */
+        const deliveryUpdate = {
+          delivery_boy_accepted:false,
+          delivery_boy_id:null,
+          delivery_boy_name:null,
+          delivery_boy_mobile:null,
+          delivery_status:"assigned"
+        };
+
+        const deliveryResult =
+          await db
+            .from(deliveryTable)
+            .update(deliveryUpdate)
+            .eq(
+              "order_id",
+              orderNumber(order)
+            )
+            .select("*")
+            .maybeSingle();
+
+        if(deliveryResult.error){
+          throw deliveryResult.error;
+        }
+
+        const customerUpdate = {
+          delivery_boy_accepted:false,
+          delivery_boy_id:null,
+          delivery_boy_name:null,
+          delivery_boy_mobile:null,
+          order_status:"packed"
+        };
+
+        const customerResult =
+          await db
+            .from(order._table)
+            .update(customerUpdate)
+            .eq(
+              "order_id",
+              orderNumber(order)
+            )
+            .select("*")
+            .maybeSingle();
+
+        if(customerResult.error){
+          throw new Error(
+            "Partner cancelled, but customer order sync failed: " +
+            customerResult.error.message
+          );
+        }
+
+        const deliveryIndex =
+          deliveryRows.findIndex(row=>{
+            return (
+              String(
+                row.order_id ??
+                row.source_order_id ??
+                ""
+              ) === orderNumber(order) &&
+              row._delivery_table === deliveryTable
+            );
+          });
+
+        if(deliveryIndex >= 0){
+          deliveryRows[deliveryIndex] = {
+            ...(deliveryResult.data ||
+              deliveryUpdate),
+            _delivery_table:deliveryTable
+          };
+        }
+
+        Object.assign(
+          order,
+          customerResult.data ||
+          customerUpdate
+        );
+
+        showToast(
+          "Delivery partner cancelled"
+        );
+
+        render();
+
+      }catch(error){
+        console.error(
+          "Cancel delivery partner error:",
+          error
+        );
+
+        button.disabled = false;
+        button.innerHTML = oldHtml;
+
+        showToast(
+          error.message ||
+          "Unable to cancel delivery partner",
+          true
+        );
       }
     };
 
@@ -2354,7 +2705,7 @@
     });
 
     async function startApp(){
-      await loadDeliveryPartners();
+      await loadDeliveryDispatchData();
       render();
       await loadTodayOrders();
       startRealtime();
