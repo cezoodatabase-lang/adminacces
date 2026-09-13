@@ -553,6 +553,88 @@
       margin-top:3px;
     }
 
+
+    /* DELIVERY PARTNER ASSIGNMENT */
+    .partnerSection{
+      padding:14px 18px 17px;
+      border-bottom:1px solid var(--line);
+      background:#fff;
+    }
+
+    .partnerHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:9px;
+    }
+
+    .partnerCurrent{
+      font-size:9px;
+      color:#6f747d;
+      line-height:1.45;
+      text-align:right;
+    }
+
+    .partnerCurrent strong{
+      color:#202329;
+      font-weight:800;
+    }
+
+    .partnerAssignRow{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:9px;
+      align-items:center;
+    }
+
+    .partnerSelect{
+      width:100%;
+      height:42px;
+      border:1px solid var(--line);
+      border-radius:11px;
+      background:#fafafa;
+      color:#333;
+      padding:0 11px;
+      outline:none;
+      font-size:10px;
+      font-weight:700;
+    }
+
+    .assignPartnerBtn{
+      height:42px;
+      padding:0 15px;
+      border:0;
+      border-radius:11px;
+      background:var(--blue);
+      color:#fff;
+      font-size:10px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+
+    .assignPartnerBtn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+    }
+
+    .productIdText{
+      margin-top:4px;
+      color:#9aa0a8;
+      font-size:8px;
+      font-weight:700;
+      word-break:break-all;
+    }
+
+    @media(max-width:520px){
+      .partnerAssignRow{
+        grid-template-columns:1fr;
+      }
+      .assignPartnerBtn{
+        width:100%;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -601,8 +683,16 @@
       {name:"upi_orders", payment:"UPI"}
     ];
 
+    /* Existing delivery tables only — no new SQL/table required */
+    const DELIVERY_TABLES = {
+      cash_delivery_orders:"delivery_cash_orders",
+      upi_orders:"delivery_upi_orders"
+    };
+
     let activeTab = "new";
     let orders = [];
+    let deliveryPartners = [];
+    let deliveryRows = [];
     const productCache = {};
 
     const ordersList = document.getElementById("ordersList");
@@ -683,6 +773,174 @@
 
     function orderKey(order){
       return `${order._table}:${order.id ?? order.order_id}`;
+    }
+
+    function deliveryTableForOrder(order){
+      return DELIVERY_TABLES[order?._table] || "";
+    }
+
+    function orderNumber(order){
+      return String(order?.order_id ?? order?.id ?? "");
+    }
+
+    function deliveryRowForOrder(order){
+      if(!order) return null;
+
+      const targetOrderId = orderNumber(order);
+      const targetDeliveryTable = deliveryTableForOrder(order);
+
+      return deliveryRows.find(row=>{
+        const rowOrderId = String(
+          row.order_id ??
+          row.source_order_id ??
+          ""
+        );
+
+        return (
+          rowOrderId === targetOrderId &&
+          row._delivery_table === targetDeliveryTable
+        );
+      }) || null;
+    }
+
+    function assignedPartner(order){
+      const row = deliveryRowForOrder(order);
+
+      if(!row){
+        return {
+          name:"",
+          mobile:"",
+          accepted:false,
+          status:""
+        };
+      }
+
+      const name = String(
+        row.delivery_boy_name ??
+        row.delivery_partner_name ??
+        row.partner_name ??
+        row.rider_name ??
+        ""
+      ).trim();
+
+      const mobile = String(
+        row.delivery_boy_mobile ??
+        row.delivery_partner_mobile ??
+        row.partner_mobile ??
+        row.rider_mobile ??
+        ""
+      ).trim();
+
+      return {
+        name,
+        mobile,
+        accepted:
+          row.delivery_boy_accepted === true ||
+          !!name ||
+          !!mobile,
+        status:String(row.delivery_status || "").trim()
+      };
+    }
+
+    function partnerKey(partner){
+      return String(partner.mobile || "").replace(/\D/g,"") ||
+        String(partner.name || "").trim().toLowerCase();
+    }
+
+    async function loadDeliveryPartners(){
+      try{
+        const [cashResult,upiResult] = await Promise.all([
+          db.from("delivery_cash_orders").select("*"),
+          db.from("delivery_upi_orders").select("*")
+        ]);
+
+        if(cashResult.error){
+          console.error("delivery_cash_orders load:",cashResult.error);
+        }
+
+        if(upiResult.error){
+          console.error("delivery_upi_orders load:",upiResult.error);
+        }
+
+        deliveryRows = [
+          ...(cashResult.data || []).map(row=>({
+            ...row,
+            _delivery_table:"delivery_cash_orders"
+          })),
+          ...(upiResult.data || []).map(row=>({
+            ...row,
+            _delivery_table:"delivery_upi_orders"
+          }))
+        ];
+
+        const map = new Map();
+
+        deliveryRows.forEach(row=>{
+          const name = String(
+            row.delivery_boy_name ??
+            row.delivery_partner_name ??
+            row.partner_name ??
+            row.rider_name ??
+            ""
+          ).trim();
+
+          const mobile = String(
+            row.delivery_boy_mobile ??
+            row.delivery_partner_mobile ??
+            row.partner_mobile ??
+            row.rider_mobile ??
+            ""
+          ).trim();
+
+          if(!name && !mobile) return;
+
+          const partner = {name,mobile};
+          const key = partnerKey(partner);
+
+          if(key && !map.has(key)){
+            map.set(key,partner);
+          }
+        });
+
+        deliveryPartners = [...map.values()].sort((a,b)=>{
+          return String(a.name || a.mobile)
+            .localeCompare(String(b.name || b.mobile));
+        });
+
+      }catch(error){
+        console.error("Delivery partner load error:",error);
+      }
+    }
+
+    function partnerOptions(order){
+      const current = assignedPartner(order);
+      const selectedKey = partnerKey(current);
+
+      const items = deliveryPartners.map(partner=>{
+        const key = partnerKey(partner);
+        const label = [
+          partner.name || "Delivery Partner",
+          partner.mobile
+        ].filter(Boolean).join(" • ");
+
+        return `
+          <option
+            value="${safe(key)}"
+            ${selectedKey && selectedKey === key ? "selected" : ""}
+          >
+            ${safe(label)}
+          </option>
+        `;
+      }).join("");
+
+      return `
+        <option value="">
+          ${deliveryPartners.length
+            ? "Select delivery partner"
+            : "No saved delivery partners found"}
+        </option>
+        ${items}
+      `;
     }
 
     function addOrUpdateOrder(order){
@@ -1329,6 +1587,15 @@
                 )}
               </div>
 
+              <div class="productIdText">
+                Product ID: ${safe(
+                  product.id ??
+                  product.product_id ??
+                  product?._orderItem?.product_id ??
+                  "—"
+                )}
+              </div>
+
               ${
                 secondary
                 ? `
@@ -1363,52 +1630,11 @@
       }).join("");
     }
 
-    function calculateLowCartFee(subtotal){
-
-      const total = number(subtotal);
-
-      if(total <= 0){
-        return 0;
-      }
-
-      if(total <= 30){
-        return 40;
-      }
-
-      if(total <= 60){
-        return 30;
-      }
-
-      if(total <= 90){
-        return 25;
-      }
-
-      if(total <= 120){
-        return 20;
-      }
-
-      if(total <= 150){
-        return 15;
-      }
-
-      if(total < 180){
-        return 10;
-      }
-
-      return 0;
-    }
-
 
     function billRows(order){
       /*
         Always show the complete live bill breakdown.
-
-        - Delivery / handling / tip / tax / discount are read from
-          the latest Supabase order row.
-        - Low Cart uses the saved low_cart_fee when available.
-        - If low_cart_fee is not saved yet, it is calculated from
-          the current item subtotal using CEZOO's Low Cart slabs.
-        - Low Cart is completely hidden once subtotal reaches ₹180+.
+        Low Cart Fee is intentionally not shown in this admin screen.
       */
 
       const subtotal = number(
@@ -1433,20 +1659,6 @@
         order.platform_fee
       );
 
-      const savedLowCartFee = number(
-        order.low_cart_fee ??
-        order.low_cart_charge ??
-        order.low_cart
-      );
-
-      const lowCartFee =
-        subtotal >= 180
-          ? 0
-          : (
-              savedLowCartFee > 0
-                ? savedLowCartFee
-                : calculateLowCartFee(subtotal)
-            );
 
       const discount = number(
         order.discount ??
@@ -1507,16 +1719,6 @@
           <strong>${money(handlingFee)}</strong>
         </div>
 
-        ${
-          lowCartFee > 0
-            ? `
-              <div class="billRow">
-                <span>Low Cart</span>
-                <strong>${money(lowCartFee)}</strong>
-              </div>
-            `
-            : ""
-        }
 
         <div class="billRow">
           <span>Taxes / GST</span>
@@ -1729,6 +1931,54 @@
               ${billRows(order)}
             </section>
 
+            <section class="partnerSection">
+              <div class="partnerHeader">
+                <div class="sectionLabel" style="margin:0">
+                  Delivery Partner
+                </div>
+
+                <div class="partnerCurrent">
+                  ${
+                    assignedPartner(order).name || assignedPartner(order).mobile
+                      ? `
+                          Assigned:
+                          <strong>
+                            ${safe(
+                              [
+                                assignedPartner(order).name,
+                                assignedPartner(order).mobile
+                              ].filter(Boolean).join(" • ")
+                            )}
+                          </strong>
+                        `
+                      : "Not assigned"
+                  }
+                </div>
+              </div>
+
+              <div class="partnerAssignRow">
+                <select
+                  id="partner-${originalIndex}"
+                  class="partnerSelect"
+                >
+                  ${partnerOptions(order)}
+                </select>
+
+                <button
+                  class="assignPartnerBtn"
+                  type="button"
+                  onclick="assignDeliveryPartner(${originalIndex},this)"
+                  ${deliveryPartners.length ? "" : "disabled"}
+                >
+                  ${
+                    assignedPartner(order).name || assignedPartner(order).mobile
+                      ? "Reassign"
+                      : "Assign"
+                  }
+                </button>
+              </div>
+            </section>
+
             <section class="statusSection">
               <div style="min-width:64px">
                 <div class="sectionLabel" style="margin:0">Status</div>
@@ -1904,6 +2154,120 @@
       });
     }
 
+    window.assignDeliveryPartner = async function(index,button){
+      const order = orders[index];
+      if(!order || !button) return;
+
+      const select = document.getElementById(`partner-${index}`);
+      if(!select || !select.value){
+        showToast("Select delivery partner",true);
+        return;
+      }
+
+      const partner = deliveryPartners.find(item=>{
+        return partnerKey(item) === select.value;
+      });
+
+      if(!partner){
+        showToast("Delivery partner not found",true);
+        return;
+      }
+
+      const deliveryTable = deliveryTableForOrder(order);
+
+      if(!deliveryTable){
+        showToast("Delivery table not configured",true);
+        return;
+      }
+
+      const oldButton = button.innerHTML;
+      button.disabled = true;
+      button.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+      try{
+        /*
+          Use the existing delivery tables and existing delivery_boy_* fields.
+          No new SQL/table is created here.
+        */
+        const payload = {...order};
+
+        delete payload._table;
+        delete payload._payment;
+        delete payload._products;
+
+        payload.source_order_id = orderNumber(order);
+        payload.source_order_type =
+          order._table === "upi_orders" ? "upi" : "cash";
+
+        payload.sent_to_delivery_at =
+          payload.sent_to_delivery_at || new Date().toISOString();
+
+        payload.delivery_status = "assigned";
+        payload.delivery_boy_name = partner.name || "";
+        payload.delivery_boy_mobile = partner.mobile || "";
+        payload.delivery_boy_accepted = false;
+
+        const {data,error} = await db
+          .from(deliveryTable)
+          .upsert(
+            payload,
+            {onConflict:"order_id"}
+          )
+          .select()
+          .maybeSingle();
+
+        if(error) throw error;
+
+        const row = {
+          ...(data || payload),
+          order_id:
+            data?.order_id ??
+            payload.order_id ??
+            orderNumber(order),
+          _delivery_table:deliveryTable
+        };
+
+        const existingIndex = deliveryRows.findIndex(item=>{
+          return (
+            String(
+              item.order_id ??
+              item.source_order_id ??
+              ""
+            ) === orderNumber(order) &&
+            item._delivery_table === deliveryTable
+          );
+        });
+
+        if(existingIndex >= 0){
+          deliveryRows[existingIndex] = {
+            ...deliveryRows[existingIndex],
+            ...row
+          };
+        }else{
+          deliveryRows.unshift(row);
+        }
+
+        showToast(
+          `Assigned to ${partner.name || partner.mobile}`
+        );
+
+        render();
+
+      }catch(error){
+        console.error("Partner assignment error:",error);
+
+        showToast(
+          error.message || "Partner assignment failed",
+          true
+        );
+
+        button.disabled = false;
+        button.innerHTML = oldButton;
+      }
+    };
+
+
     window.updateOrderStatus = async function(index,button){
       const order = orders[index];
       if(!order) return;
@@ -1989,9 +2353,14 @@
       });
     });
 
-    render();
-    loadTodayOrders();
-    startRealtime();
+    async function startApp(){
+      await loadDeliveryPartners();
+      render();
+      await loadTodayOrders();
+      startRealtime();
+    }
+
+    startApp();
   </script>
 </body>
 </html>
