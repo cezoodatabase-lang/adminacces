@@ -2255,6 +2255,87 @@
       });
     }
 
+
+    function unsupportedDeliveryColumnFromError(error){
+      const message = String(error?.message || "");
+
+      const patterns = [
+        /Could not find the ['"]([^'"]+)['"] column/i,
+        /column ['"]?([^'".\s]+)['"]? .* does not exist/i,
+        /column .*?\.([^.\s]+) does not exist/i
+      ];
+
+      for(const pattern of patterns){
+        const match = message.match(pattern);
+
+        if(match && match[1]){
+          return match[1];
+        }
+      }
+
+      return "";
+    }
+
+    async function createDeliveryRowSafely(
+      deliveryTable,
+      rawPayload
+    ){
+      /*
+        Customer-order tables can have columns that do not exist
+        in delivery_* tables (example: low_cart_fee).
+
+        Insert a copy and, only when Supabase reports an unsupported
+        column, remove that column and retry. This is the same robust
+        pattern used by the working CEZOO admin dashboard.
+      */
+      const safePayload = {...rawPayload};
+      const removedColumns = [];
+
+      for(let attempt = 0; attempt < 45; attempt++){
+        const {
+          data,
+          error
+        } = await db
+          .from(deliveryTable)
+          .insert(safePayload)
+          .select("*")
+          .maybeSingle();
+
+        if(!error){
+          if(removedColumns.length){
+            console.info(
+              "Delivery row skipped unsupported columns:",
+              removedColumns
+            );
+          }
+
+          return data || safePayload;
+        }
+
+        const unsupportedColumn =
+          unsupportedDeliveryColumnFromError(error);
+
+        if(
+          unsupportedColumn &&
+          Object.prototype.hasOwnProperty.call(
+            safePayload,
+            unsupportedColumn
+          )
+        ){
+          delete safePayload[unsupportedColumn];
+          removedColumns.push(unsupportedColumn);
+          continue;
+        }
+
+        throw error;
+      }
+
+      throw new Error(
+        "Could not prepare delivery row because too many unsupported columns were found"
+      );
+    }
+
+
     window.dispatchOrderToPartner = async function(index,button){
       const order = orders[index];
 
@@ -2323,6 +2404,12 @@
           delete payload._payment;
           delete payload._products;
 
+          /*
+            These are customer-order/admin-only fields and must not be
+            copied into delivery tables.
+          */
+          delete payload.low_cart_fee;
+
           payload.source_order_id =
             orderNumber(order);
 
@@ -2340,22 +2427,23 @@
           payload.delivery_boy_accepted =
             false;
 
-          const createResult =
-            await db
-              .from(deliveryTable)
-              .upsert(
-                payload,
-                {onConflict:"order_id"}
-              )
-              .select("*")
-              .maybeSingle();
+          /*
+            IMPORTANT:
+            Do not directly upsert the full customer-order object.
+            Some customer columns (for example low_cart_fee) are not
+            present in delivery_* tables.
 
-          if(createResult.error){
-            throw createResult.error;
-          }
+            createDeliveryRowSafely() removes only unsupported columns
+            reported by Supabase and retries automatically.
+          */
+          const createdDeliveryRow =
+            await createDeliveryRowSafely(
+              deliveryTable,
+              payload
+            );
 
           deliveryRow = {
-            ...(createResult.data || payload),
+            ...createdDeliveryRow,
             _delivery_table:deliveryTable
           };
 
